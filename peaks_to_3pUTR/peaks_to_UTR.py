@@ -122,7 +122,6 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance):
                     criteria.truncate_5_prime_end(peak, next_gene, utr)
             except criteria.CriteriaFailure as e:
                 print("%s - %s" % (type(e).__name__, e))
-                continue
             else:
                 if utr.is_valid():
                     print("PEAK %s CORRESPONDS TO 3' UTR OF GENE %s" % (peak.name, gene.id))
