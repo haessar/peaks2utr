@@ -9,7 +9,14 @@ fi
 macs2 callpeak -t "$1.reverse.bam" -n reverse  --nomodel --extsize 100 --broad
 macs2 callpeak -t "$1.forward.bam" -n forward  --nomodel --extsize 100 --broad
 
-./peaks_to_UTR.py
+input_gff="$2"
+if [[ $input_gff == *.gtf ]]; then
+  input_gff="${2%%.*}.gff"
+  gffread -E "$2" -o "$input_gff"
+fi
 
-cat Orig.PRFA01000011.gff three_prime_UTRs.gff > full.gff
+../../peaks_to_3pUTR/peaks_to_UTR.py "$input_gff" --max-distance 2500
+
+cat "$input_gff" three_prime_UTRs.gff > full.gff
+
 gt gff3 -sort -retainids -tidy full.gff > full.sorted.gff
