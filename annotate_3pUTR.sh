@@ -1,22 +1,33 @@
-if [ ! -f "$1.forward.bam" ]; then
-    samtools view -b -F 20 "$1.bam" > "$1.forward.bam"
+GFF_IN="$2"
+
+PYTHON_CODE=$(cat <<END
+import os.path
+
+import gffutils
+
+gff_db = os.path.splitext("$GFF_IN")[0] + '.db'
+if not os.path.isfile(gff_db):
+    gffutils.create_db("$GFF_IN", gff_db, force=True)
+print(gff_db)
+END
+)
+
+GFF_DB="$(python3 -c "$PYTHON_CODE")"
+
+../../call_forward_peaks.sh "$1" &
+../../call_reverse_peaks.sh "$1" &
+
+wait
+
+../../peaks_to_3pUTR/peaks_to_UTR.py "$GFF_DB" forward_peaks.broadPeak forward --max-distance "$3" &
+../../peaks_to_3pUTR/peaks_to_UTR.py "$GFF_DB" reverse_peaks.broadPeak reverse --max-distance "$3" &
+
+wait
+
+cat forward_three_prime_UTRs.gff reverse_three_prime_UTRs.gff > three_prime_UTRs.gff
+
+if [[ $GFF_IN == *.gff ]]; then
+  cat "$GFF_IN" three_prime_UTRs.gff > full.gff
+
+  gt gff3 -sort -retainids -tidy full.gff > full.sorted.gff
 fi
-
-if [ ! -f "$1.reverse.bam" ]; then
-    samtools view -b -f 16 "$1.bam" > "$1.reverse.bam"
-fi
-
-macs2 callpeak -t "$1.reverse.bam" -n reverse  --nomodel --extsize 100 --broad
-macs2 callpeak -t "$1.forward.bam" -n forward  --nomodel --extsize 100 --broad
-
-input_gff="$2"
-if [[ $input_gff == *.gtf ]]; then
-  input_gff="${2%%.*}.gff"
-  gffread -E "$2" -o "$input_gff"
-fi
-
-../../peaks_to_3pUTR/peaks_to_UTR.py "$input_gff" --max-distance 2500
-
-cat "$input_gff" three_prime_UTRs.gff > full.gff
-
-gt gff3 -sort -retainids -tidy full.gff > full.sorted.gff

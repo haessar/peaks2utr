@@ -3,23 +3,22 @@ from abc import ABC
 import argparse
 import collections
 import csv
-import os.path
 
 import gffutils
 
 from peaks_to_3pUTR import criteria
 
-FORWARD_PEAKS_FILENAME = "forward_peaks.broadPeak"
-REVERSE_PEAKS_FILENAME = "reverse_peaks.broadPeak"
+strand_map = {
+    'forward': '+',
+    'reverse': '-',
+}
 
 parser = argparse.ArgumentParser(
     description="Build an annotation GFF file containing three_prime_UTR features based on read coverage peaks."
 )
-parser.add_argument('gff_in', help="input 'canonical' GFF file")
-parser.add_argument('forward_peaks', nargs='?', default=FORWARD_PEAKS_FILENAME,
-                    help="forward strand peaks in BED 6+3 format")
-parser.add_argument('reverse_peaks', nargs='?', default=REVERSE_PEAKS_FILENAME,
-                    help="reverse strand peaks in BED 6+3 format")
+parser.add_argument('gff_db', help="gffutils.FeatureDB built from 'canonical' GFF file")
+parser.add_argument('peaks', nargs='?', help="peaks in BED 6+3 format")
+parser.add_argument('strand', choices=('forward', 'reverse'))
 parser.add_argument('--max-distance', type=int, default=200,
                     help='maximum distance in bases that UTR can be from a transcript')
 
@@ -66,7 +65,7 @@ class UTR(RangeMixin):
 
     def generate_feature(self, gene):
         attrs = dict(gene.attributes)
-        del attrs['ID']
+        attrs.pop('ID', None)
         attrs['Parent'] = [gene.id]
         attrs['colour'] = ['3']
         self.feature = gffutils.Feature(
@@ -136,20 +135,13 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance):
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    gff_out = os.path.splitext(args.gff_in)[0] + '.db'
-    if not os.path.isfile(gff_out):
-        db = gffutils.create_db(args.gff_in, gff_out, force=True)
-    else:
-        db = gffutils.FeatureDB(gff_out)
-
+    db = gffutils.FeatureDB(args.gff_db)
     annotations = Annotations()
-    strands = [(args.forward_peaks, '+'), (args.reverse_peaks, '-')]
-    for peaks_filename, strand in strands:
-        with open(peaks_filename, 'r') as fin:
-            peaks = csv.reader(fin, delimiter="\t")
-            for peak in peaks:
-                peak = Peak(*peak)
-                peak.strand = strand
-                annotate_utr_for_peak(db, annotations, peak, args.max_distance)
-    with open('three_prime_UTRs.gff', 'w') as fout:
+    with open(args.peaks, 'r') as fin:
+        peaks = csv.reader(fin, delimiter="\t")
+        for peak in peaks:
+            peak = Peak(*peak)
+            peak.strand = strand_map.get(args.strand)
+            annotate_utr_for_peak(db, annotations, peak, args.max_distance)
+    with open(args.strand + '_three_prime_UTRs.gff', 'w') as fout:
         fout.writelines(annotations)
