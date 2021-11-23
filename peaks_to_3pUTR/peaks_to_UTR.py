@@ -3,6 +3,7 @@ from abc import ABC
 import argparse
 import collections
 import csv
+import os.path
 
 import gffutils
 
@@ -135,8 +136,11 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance):
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    gff_out = args.gff_in.split('.')[0] + '.db'
-    db = gffutils.create_db(args.gff_in, gff_out, force=True)
+    gff_out = os.path.splitext(args.gff_in)[0] + '.db'
+    if not os.path.isfile(gff_out):
+        db = gffutils.create_db(args.gff_in, gff_out, force=True)
+    else:
+        db = gffutils.FeatureDB(gff_out)
 
     annotations = Annotations()
     strands = [(args.forward_peaks, '+'), (args.reverse_peaks, '-')]
