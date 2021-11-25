@@ -2,16 +2,38 @@ class CriteriaFailure(Exception):
     pass
 
 
-def assert_not_already_annotated(db, peak, gene):
+def track_failed_peaks(f):
+    """
+    Decorator to track set of peaks that fail this criterion.
+    """
+    def wrapped(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except CriteriaFailure:
+            peak = kwargs.get('peak', args[0])
+            wrapped.fails.add(peak.name)
+            raise
+    wrapped.fails = set()
+    return wrapped
+
+
+@track_failed_peaks
+def assert_not_already_annotated(peak, gene, db):
+    """
+    If the canonical annotation for this gene already contains a 'three_prime_UTR' annotation, we want to leave this as
+    is.
+    """
     if any(db.children(gene, featuretype='three_prime_UTR')):
         raise CriteriaFailure("3' UTR already annotated for gene %s near peak %s" % (gene.id, peak.name))
 
 
+@track_failed_peaks
 def assert_not_a_subset(peak, gene):
     if peak.range.issubset(gene.range):
         raise CriteriaFailure("Peak %s wholly contained within gene %s" % (peak.name, gene.id))
 
 
+@track_failed_peaks
 def assert_3_prime_end_and_truncate(peak, gene, utr):
     if peak.strand == "+" and peak.end > gene.end:
         utr.start = gene.end

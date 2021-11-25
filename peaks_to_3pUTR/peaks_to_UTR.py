@@ -85,6 +85,10 @@ class UTR(RangeMixin):
 
 
 class Annotations(collections.UserDict):
+    def __init__(self):
+        super().__init__()
+        self.no_features_counter = 0
+
     def __setitem__(self, gene, new_utr):
         existing_utr = self.get(gene)
         if existing_utr:
@@ -111,7 +115,7 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance):
             try:
                 gene = genes[idx]
                 gene.range = range(gene.start, gene.end)
-                criteria.assert_not_already_annotated(db, peak, gene)
+                criteria.assert_not_already_annotated(peak, gene, db)
                 criteria.assert_not_a_subset(peak, gene)
                 utr = UTR(start=peak.start, end=peak.end)
                 criteria.assert_3_prime_end_and_truncate(peak, gene, utr)
@@ -130,6 +134,19 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance):
                     annotations[gene.id] = utr
     else:
         print("No features found near peak %s" % peak.name)
+        annotations.no_features_counter += 1
+
+
+def write_stats_line(file, msg, total, numerator=None):
+    """
+    Format given statistics message with optional percentage.
+    """
+    msg += ": "
+    if numerator is None:
+        msg += "{}\n".format(total)
+    else:
+        msg += "{} ({}%)\n".format(numerator, int(100 * numerator / total))
+    file.write(msg)
 
 
 if __name__ == "__main__":
@@ -138,10 +155,21 @@ if __name__ == "__main__":
     db = gffutils.FeatureDB(args.gff_db)
     annotations = Annotations()
     with open(args.peaks, 'r') as fin:
-        peaks = csv.reader(fin, delimiter="\t")
+        peaks = list(csv.reader(fin, delimiter="\t"))
+        total_peaks = len(peaks)
         for peak in peaks:
             peak = Peak(*peak)
             peak.strand = strand_map.get(args.strand)
             annotate_utr_for_peak(db, annotations, peak, args.max_distance)
     with open(args.strand + '_three_prime_UTRs.gff', 'w') as fout:
         fout.writelines(annotations)
+    with open(args.strand + '_stats.txt', 'w') as fstats:
+        write_stats_line(fstats, "Total peaks", total_peaks)
+        write_stats_line(fstats, "Total 3' UTRs annotated", len(annotations))
+        write_stats_line(fstats, "Peaks with no nearby features", total_peaks, annotations.no_features_counter)
+        write_stats_line(fstats, "Peaks corresponding to an already annotated 3' UTR", total_peaks,
+                         len(criteria.assert_not_already_annotated.fails))
+        write_stats_line(fstats, "Peaks contained within a feature", total_peaks,
+                         len(criteria.assert_not_a_subset.fails))
+        write_stats_line(fstats, "Peaks corresponding to 5'-end of a feature", total_peaks,
+                         len(criteria.assert_3_prime_end_and_truncate.fails))
