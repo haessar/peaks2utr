@@ -107,7 +107,7 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance):
         start=peak.start - max_distance,
         end=peak.end + max_distance,
         strand=peak.strand,
-        featuretype=['gene', 'transcript'])
+        featuretype=['gene', 'transcript', 'protein_coding_gene'])
     )
     genes = list(reversed(genes)) if peak.strand == '-' else genes
     if genes:
