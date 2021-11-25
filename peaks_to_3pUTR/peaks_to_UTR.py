@@ -2,6 +2,7 @@
 from abc import ABC
 import argparse
 import collections
+import copy
 import csv
 
 import gffutils
@@ -21,6 +22,9 @@ parser.add_argument('peaks', nargs='?', help="peaks in BED 6+3 format")
 parser.add_argument('strand', choices=('forward', 'reverse'))
 parser.add_argument('--max-distance', type=int, default=200,
                     help='maximum distance in bases that UTR can be from a transcript')
+parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria")
+parser.add_argument('--five-prime-ext', type=int, default=0,
+                    help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it')
 
 
 class RangeMixin(ABC):
@@ -101,7 +105,16 @@ class Annotations(collections.UserDict):
             yield str(utr.feature) + '\n'
 
 
-def annotate_utr_for_peak(db, annotations, peak, max_distance):
+def set_gene_range(gene, strand, five_prime_ext=0):
+    """Assign a range to gene taking into account assumed 5' extension"""
+    if strand == "+":
+        gene.start -= five_prime_ext
+    else:
+        gene.end += five_prime_ext
+    gene.range = range(gene.start, gene.end)
+
+
+def annotate_utr_for_peak(db, annotations, peak, max_distance, override_utr, five_prime_ext):
     genes = list(db.region(
         seqid=peak.chr,
         start=peak.start - max_distance,
@@ -113,16 +126,17 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance):
     if genes:
         for idx, gene in enumerate(genes):
             try:
-                gene = genes[idx]
-                gene.range = range(gene.start, gene.end)
-                criteria.assert_not_already_annotated(peak, gene, db)
+                gene = copy.deepcopy(genes[idx])
+                set_gene_range(gene, peak.strand)
+                if not override_utr:
+                    criteria.assert_not_already_annotated(peak, gene, db)
                 criteria.assert_not_a_subset(peak, gene)
                 utr = UTR(start=peak.start, end=peak.end)
                 criteria.assert_3_prime_end_and_truncate(peak, gene, utr)
                 if len(genes) > idx + 1:
-                    next_gene = genes[idx + 1]
+                    next_gene = copy.deepcopy(genes[idx + 1])
+                    set_gene_range(next_gene, peak.strand, five_prime_ext)
                     criteria.belongs_to_next_gene(peak, next_gene)
-                    next_gene.range = range(next_gene.start, next_gene.end)
                     criteria.truncate_5_prime_end(peak, next_gene, utr)
             except criteria.CriteriaFailure as e:
                 print("%s - %s" % (type(e).__name__, e))
@@ -160,7 +174,7 @@ if __name__ == "__main__":
         for peak in peaks:
             peak = Peak(*peak)
             peak.strand = strand_map.get(args.strand)
-            annotate_utr_for_peak(db, annotations, peak, args.max_distance)
+            annotate_utr_for_peak(db, annotations, peak, args.max_distance, args.override_utr, args.five_prime_ext)
     with open(args.strand + '_three_prime_UTRs.gff', 'w') as fout:
         fout.writelines(annotations)
     with open(args.strand + '_stats.txt', 'w') as fstats:
