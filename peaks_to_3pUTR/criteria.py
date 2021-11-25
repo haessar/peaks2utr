@@ -29,12 +29,22 @@ def assert_not_already_annotated(peak, gene, db):
 
 @track_failed_peaks
 def assert_not_a_subset(peak, gene):
+    """
+    If a peak occurs entirely within an existing gene annotation (i.e. it's a subset), we consider that it is already
+    accounted for and can't possibly refer to a new UTR.
+    """
     if peak.range.issubset(gene.range):
         raise CriteriaFailure("Peak %s wholly contained within gene %s" % (peak.name, gene.id))
 
 
 @track_failed_peaks
 def assert_3_prime_end_and_truncate(peak, gene, utr):
+    """
+    If a peak occurs at the untranslated 3'-end of a gene, we need to set the utr start/end to occur at the end/start of
+    the existing gene annotation, respective of strand.
+    Otherwise, we take advantage of the fact that the 'assert_not_a_subset' criteria has passed to assume it must
+    correspond to the 5'-end of the gene.
+    """
     if peak.strand == "+" and peak.end > gene.end:
         utr.start = gene.end
     elif peak.strand == "-" and peak.start < gene.start:
@@ -44,6 +54,10 @@ def assert_3_prime_end_and_truncate(peak, gene, utr):
 
 
 def truncate_5_prime_end(peak, next_gene, utr):
+    """
+    If a peak is broad enough it can potentially overlap the 5'-end of the following gene, so we check for an
+    intersection and truncate if it exists.
+    """
     if utr.range.intersection(next_gene.range):
         print("Peak %s overlapping following gene %s: Truncating." % (peak.name, next_gene.id))
         if peak.strand == "+":
@@ -53,5 +67,10 @@ def truncate_5_prime_end(peak, next_gene, utr):
 
 
 def belongs_to_next_gene(peak, next_gene):
+    """
+    If the max_distance is large enough, it's entirely possible for a peak to occur after the start of the following
+    gene and still be within range of the present gene. In this case we want to consider it "belonging" to the following
+    gene only.
+    """
     if (peak.strand == "+" and peak.start > next_gene.start) or (peak.strand == "-" and peak.end < next_gene.end):
         raise CriteriaFailure("Peak %s belongs entirely to following gene %s." % (peak.name, next_gene.id))
