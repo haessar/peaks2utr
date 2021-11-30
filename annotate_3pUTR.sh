@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 #
-# cat -n all files
+# Use MACS2 to build forward and reverse peaks files for given .bam file.
+# Iterate peaks through set of criteria to determine UTR viability, before annotating in .gff file.
 #
-# Usage: cat-n_wrapper_example.sh [--count=N] FILE...
+# Usage: annotate_3pUTR.sh [--max-distance=N] BAM_FILE GFF_FILE ...
 #
 # Arguments:
-#   FILE     input file, if FILLE equal - stdin is used instead.
+#   BAM_FILE            input bam file
+#   GFF_FILE            input 'canonical' gff file.
 #
 # Options:
-#   --count=N   limit the number of line to display
+#   --max-distance=N    limit the number of line to display
 #
 # Examples:
-#    ./cat-n_wrapper.sh --count=3 cat-n_wrapper.sh  quick_example.sh
+#    ./annotate_3pUTR.sh --max-distance=2500 in.bam in.gff
 #
 
 source docopts.sh
