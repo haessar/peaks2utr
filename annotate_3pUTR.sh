@@ -13,12 +13,13 @@
 # Examples:
 #    ./cat-n_wrapper.sh --count=3 cat-n_wrapper.sh  quick_example.sh
 #
-parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" || exit ; pwd -P )
-export PATH=$parent_path:$PATH
 
 source docopts.sh
 help=$(docopt_get_help_string $0)
 version='0.1'
+
+parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" || exit ; pwd -P )
+export PATH=$parent_path:$PATH
 
 parsed=$(docopts -G args -h "$help" -V $version : "$@")
 eval "$parsed"
