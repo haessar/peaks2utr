@@ -11,6 +11,7 @@ import gffutils
 from . import constants, criteria, models
 from .annotations import Annotations, annotate_utr_for_peak
 
+
 def prepare_argparser():
     parser = argparse.ArgumentParser(
         description="""
@@ -52,11 +53,11 @@ def main():
     argparser = prepare_argparser()
     args = argparser.parse_args()
 
-    gff_db = cached(os.path.splitext(args.GFF_IN)[0] + '.db')
+    gff_db = cached(os.path.basename(os.path.splitext(args.GFF_IN)[0] + '.db'))
     if not os.path.isfile(gff_db):
         gffutils.create_db(args.GFF_IN, gff_db, force=True)
 
-    bam_basename = os.path.splitext(args.BAM_IN)[0]
+    bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
     if not os.path.isfile(cached(bam_basename + '.forward.bam')):
         pysam.view("--threads", "6", "-b", "-F", "20", "-o", cached(bam_basename + '.forward.bam'), args.BAM_IN, catch_stdout=False)
     
