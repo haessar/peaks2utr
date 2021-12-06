@@ -1,5 +1,6 @@
 import collections
 import copy
+import logging
 
 from . import criteria, models
 
@@ -55,13 +56,12 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance, override_utr, fiv
                     criteria.belongs_to_next_gene(peak, next_gene)
                     criteria.truncate_5_prime_end(peak, next_gene, utr)
             except criteria.CriteriaFailure as e:
-                print("%s - %s" % (type(e).__name__, e))
+                logging.debug("%s - %s" % (type(e).__name__, e))
             else:
                 if utr.is_valid():
-                    print("PEAK %s CORRESPONDS TO 3' UTR OF GENE %s" % (peak.name, gene.id))
-                    print(utr)
+                    logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                     utr.generate_feature(gene)
                     annotations[gene.id] = utr
     else:
-        print("No features found near peak %s" % peak.name)
+        logging.debug("No features found near peak %s" % peak.name)
         annotations.no_features_counter += 1

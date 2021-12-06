@@ -1,3 +1,6 @@
+import logging
+
+
 class CriteriaFailure(Exception):
     pass
 
@@ -59,7 +62,7 @@ def truncate_5_prime_end(peak, next_gene, utr):
     intersection and truncate if it exists.
     """
     if utr.range.intersection(next_gene.range):
-        print("Peak %s overlapping following gene %s: Truncating." % (peak.name, next_gene.id))
+        logging.debug("Peak %s overlapping following gene %s: Truncating." % (peak.name, next_gene.id))
         if peak.strand == "+":
             utr.end = next_gene.start
         else:
