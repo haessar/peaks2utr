@@ -14,6 +14,7 @@ from . import constants, models
 from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
 from .utils import cached, multiprocess_over_iterable, iter_batches, yield_from_process
 from .preprocess import call_peaks, create_db, pysam_strand_split
+from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
 
 
 def prepare_argparser():
@@ -41,6 +42,7 @@ async def _main():
     """
     The main function / pipeline for peaks2utr.
     """
+    try:
     # Change root logger level from WARNING (default) to NOTSET in order for all messages to be delegated.
     logging.getLogger().setLevel(logging.NOTSET)
 
@@ -107,15 +109,13 @@ async def _main():
         with open(constants.THREE_PRIME_UTR_GFF_FN, 'w') as fout:
             logging.info("Writing annotations to GFF output file.")
             fout.writelines(annotations)
-    with open('summary_stats.txt', 'w') as fstats:
-        logging.info("Writing summary statistics file.")
-        fstats.write(format_stats_line("Total peaks", total_peaks))
-        fstats.write(format_stats_line("Total 3' UTRs annotated", len(annotations)))
-        fstats.write(format_stats_line("Peaks with no nearby features", total_peaks, annotations.no_features_counter))
-        fstats.write(format_stats_line("Peaks corresponding to an already annotated 3' UTR", total_peaks,
-                                       len(criteria.assert_not_already_annotated.fails)))
-        fstats.write(format_stats_line("Peaks contained within a feature", total_peaks,
-                                       len(criteria.assert_not_a_subset.fails)))
-        fstats.write(format_stats_line("Peaks corresponding to 5'-end of a feature", total_peaks,
-                                       len(criteria.assert_3_prime_end_and_truncate.fails)))
-    logging.info("%s finished successfully." % __package__)
+
+        merge_and_gt_gff3_sort(annotations, args)
+        write_summary_stats(annotations, total_peaks)
+
+        logging.info("%s finished successfully." % __package__)
+        await asyncio.sleep(1)
+        sys.exit(0)
+    except KeyboardInterrupt:
+        logging.error("User interrupted processing. Aborting.")
+        sys.exit(130)
