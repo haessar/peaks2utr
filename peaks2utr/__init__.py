@@ -62,7 +62,7 @@ async def _main():
             os.mkdir(constants.LOG_DIR)
 
         # Add file handler, with level DEBUG.
-        fileHandler = logging.FileHandler(filename=os.path.join(constants.LOG_DIR, 'debug.log'))
+        fileHandler = logging.FileHandler(filename=os.path.join(constants.LOG_DIR, '{}_debug.log'.format(__package__)), mode="w")
         fileHandler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fileHandler.setFormatter(formatter)
