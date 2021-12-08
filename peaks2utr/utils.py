@@ -1,6 +1,7 @@
-import  multiprocessing
+import multiprocessing
 import os.path
 from queue import Empty
+import resource
 
 from .constants import CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
@@ -90,3 +91,11 @@ def yield_from_process(q, p, pbar=None):
                     pbar.update()
             except Empty:
                 break
+
+
+def limit_memory(maxsize):
+    """
+    Limit total available memory globally to maxsize bytes. Will throw MemoryError if breached.
+    """
+    _, hard = resource.getrlimit(resource.RLIMIT_AS)
+    resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))

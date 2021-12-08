@@ -50,8 +50,11 @@ def merge_and_gt_gff3_sort(annotations, args):
             flog.write(e.output)
             if e.returncode == 127:
                 logging.warning("Genometools binary can't be called. Please ensure it is installed.")
-            logging.warning("Failed to merge three_prime_UTRs. Check %s." % log_fn)          
+        except MemoryError:
+            logging.warning("Process required too much memory. Aborting.")
         else:
             flog.write(output)
             if os.path.exists(new_gff_fn):
-                logging.info("Successfully merged three_prime_UTRs into canonical gff: %s." % new_gff_fn)        
+                logging.info("Successfully merged three_prime_UTRs into canonical gff: %s." % new_gff_fn)
+                return
+    logging.warning("Failed to merge three_prime_UTRs. Check %s." % log_fn)

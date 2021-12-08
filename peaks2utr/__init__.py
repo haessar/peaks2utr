@@ -8,11 +8,12 @@ import os
 import os.path
 import sys
 
+import psutil
 from tqdm import tqdm
 
 from . import constants, models
 from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
-from .utils import cached, multiprocess_over_iterable, iter_batches, yield_from_process
+from .utils import cached, multiprocess_over_iterable, iter_batches, yield_from_process, limit_memory
 from .preprocess import call_peaks, create_db, pysam_strand_split
 from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
 
@@ -37,6 +38,7 @@ def prepare_argparser():
 
 
 def main():
+    limit_memory(constants.PERC_ALLOCATED_VRAM * psutil.virtual_memory().total / 100)
     asyncio.run(_main())
 
 
