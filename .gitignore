@@ -225,3 +225,6 @@ fabric.properties
 
 # test runs
 /tests
+
+# Sqlite3 dbs
+*.db
