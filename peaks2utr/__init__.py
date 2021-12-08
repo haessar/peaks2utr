@@ -33,7 +33,11 @@ def prepare_argparser():
     return parser
 
 
-async def main():
+def main():
+    asyncio.run(_main())
+
+
+async def _main():
     """
     The main function / pipeline for peaks2utr.
     """
