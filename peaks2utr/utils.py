@@ -3,6 +3,7 @@ import os.path
 from queue import Empty
 
 from .constants import CACHE_DIR
+from .exceptions import EXCEPTIONS_MAP
 
 
 class Counter:
@@ -50,6 +51,8 @@ def multiprocess_over_iterable(iterable, function, args):
         p.start()
     for job in jobs:
         job.join()
+        if job.exitcode != 0:
+            raise EXCEPTIONS_MAP.get(function.__name__, Exception)
 
 
 def format_stats_line(msg, total, numerator=None):
