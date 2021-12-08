@@ -44,6 +44,9 @@ class UTR(RangeMixin):
         return self.range == other.range
 
     def generate_feature(self, gene):
+        """
+        Generate three_prime_UTR feature in gff3 format.
+        """
         attrs = dict(gene.attributes)
         attrs.pop('ID', None)
         attrs['Parent'] = [gene.id]

@@ -29,15 +29,23 @@ def cached(filename):
 
 
 async def consume_lines(pipe, log_file):
+    """
+    Asynchronously write lines in pipe to log file.
+    """
     with open(log_file, 'bw') as f:
         while line := await pipe.readline():
             f.write(line)
 
 
 def multiprocess_over_iterable(iterable, function, args):
+    """
+    Assign a multiprocessing Process to call function for every item in iterable, passing this item
+    as the function's first argument.
+    Start each process and wait for them all to finish before returning.
+    """
     jobs = []
     for x in iterable:
-        p = Process(target=function, args=args + [x])
+        p = multiprocessing.Process(target=function, args=[x] + args)
         jobs.append(p)
         p.start()
     for job in jobs:

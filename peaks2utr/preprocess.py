@@ -11,7 +11,9 @@ from utils import cached, consume_lines
 from constants import CACHE_DIR, LOG_DIR, PYSAM_STRAND_ARGS
 
 
-def pysam_strand_split(bam_basename, args, strand):
+    """
+    Call 'samtools view' to split BAM_IN for each strand.
+    """
     if not os.path.isfile(cached(bam_basename + '.%s.bam' % strand)):
         logging.info("Splitting %s strand from %s." % (strand, args.BAM_IN))
         pysam.view("--threads", args.processors, "-b", *PYSAM_STRAND_ARGS[strand], "-o", cached(bam_basename + '.%s.bam' % strand), args.BAM_IN, catch_stdout=False)
@@ -19,6 +21,9 @@ def pysam_strand_split(bam_basename, args, strand):
 
 
 async def create_db(gff_in):
+    """
+    Asynchronously create sqlite3 db for GFF_IN.
+    """
     gff_db = cached(os.path.basename(os.path.splitext(gff_in)[0] + '.db'))
     if not os.path.isfile(gff_db):
         logging.info('Creating gff db.')
@@ -29,7 +34,7 @@ async def create_db(gff_in):
 
 async def call_peaks(bam_basename, strand):
     """
-    Call MACS2 asynchronously for forward and reverse strand BAM files.
+    Call MACS2 asynchronously for stranded BAM file.
     """
     if not os.path.isfile(cached("%s_peaks.broadPeak" % strand)):
         logging.info("Calling peaks for %s strand with MACS2." % strand)
