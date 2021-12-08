@@ -43,43 +43,43 @@ async def _main():
     The main function / pipeline for peaks2utr.
     """
     try:
-    # Change root logger level from WARNING (default) to NOTSET in order for all messages to be delegated.
-    logging.getLogger().setLevel(logging.NOTSET)
+        # Change root logger level from WARNING (default) to NOTSET in order for all messages to be delegated.
+        logging.getLogger().setLevel(logging.NOTSET)
 
-    # Add stdout handler, with level INFO.
-    console = logging.StreamHandler(sys.stdout)
-    console.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(levelname)-8s %(message)s')
-    console.setFormatter(formatter)
-    logging.getLogger().addHandler(console)
+        # Add stdout handler, with level INFO.
+        console = logging.StreamHandler(sys.stdout)
+        console.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(levelname)-8s %(message)s')
+        console.setFormatter(formatter)
+        logging.getLogger().addHandler(console)
 
-    if not os.path.exists(constants.LOG_DIR):
-        logging.info("Make .log directory")
-        os.mkdir(constants.LOG_DIR)
+        if not os.path.exists(constants.LOG_DIR):
+            logging.info("Make .log directory")
+            os.mkdir(constants.LOG_DIR)
 
-    # Add file handler, with level DEBUG.
-    fileHandler = logging.FileHandler(filename=os.path.join(constants.LOG_DIR, 'debug.log'))
-    fileHandler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    fileHandler.setFormatter(formatter)
-    logging.getLogger().addHandler(fileHandler)
+        # Add file handler, with level DEBUG.
+        fileHandler = logging.FileHandler(filename=os.path.join(constants.LOG_DIR, 'debug.log'))
+        fileHandler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fileHandler.setFormatter(formatter)
+        logging.getLogger().addHandler(fileHandler)        
 
-    
-    if not os.path.exists(constants.CACHE_DIR):
-        logging.info("Make .cache directory")
-        os.mkdir(constants.CACHE_DIR)
+        if not os.path.exists(constants.CACHE_DIR):
+            logging.info("Make .cache directory")
+            os.mkdir(constants.CACHE_DIR)
 
-    argparser = prepare_argparser()
-    args = argparser.parse_args()
+        argparser = prepare_argparser()
+        args = argparser.parse_args()
 
-    bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
-    multiprocess_over_iterable(['forward', 'reverse'], pysam_strand_split, [bam_basename, args])
 
-    db, _, _ = await asyncio.gather(
-        create_db(args.GFF_IN),
-        call_peaks(bam_basename, "forward"),
-        call_peaks(bam_basename, "reverse")
-    )
+        bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
+        multiprocess_over_iterable(['forward', 'reverse'], pysam_strand_split, [bam_basename, args])
+
+        db, _, _ = await asyncio.gather(
+            create_db(args.GFF_IN),
+            call_peaks(bam_basename, "forward"),
+            call_peaks(bam_basename, "reverse")
+        )
 
         def parse_peaks(strand):
             with open(cached(strand + "_peaks.broadPeak"), 'r') as fin:
