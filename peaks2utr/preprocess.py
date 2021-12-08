@@ -6,11 +6,12 @@ from asgiref.sync import sync_to_async
 import gffutils
 import pysam
 
-from exceptions import MACS2Error
-from utils import cached, consume_lines
-from constants import CACHE_DIR, LOG_DIR, PYSAM_STRAND_ARGS
+from .exceptions import MACS2Error
+from .utils import cached, consume_lines
+from .constants import CACHE_DIR, LOG_DIR, PYSAM_STRAND_ARGS
 
 
+def pysam_strand_split(strand, bam_basename, args):
     """
     Call 'samtools view' to split BAM_IN for each strand.
     """
@@ -29,7 +30,7 @@ async def create_db(gff_in):
         logging.info('Creating gff db.')
         await sync_to_async(gffutils.create_db)(gff_in, gff_db, force=True)
         logging.info('Finished creating gff db.')
-    return gffutils.FeatureDB(gff_db)
+    return gff_db
 
 
 async def call_peaks(bam_basename, strand):
@@ -43,8 +44,7 @@ async def call_peaks(bam_basename, strand):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT
         )
-        stdout_task = asyncio.create_task(consume_lines(process.stdout, os.path.join(LOG_DIR, "%s_macs2.log" % strand)))
-        await stdout_task
+        asyncio.create_task(consume_lines(process.stdout, os.path.join(LOG_DIR, "%s_macs2.log" % strand)))
         exit_code = await process.wait()
         if exit_code != 0:
             logging.error("MACS2 returned an error.")
