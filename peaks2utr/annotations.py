@@ -1,8 +1,16 @@
 import collections
 import copy
 import logging
+import multiprocessing
+import sqlite3
+
+import gffutils
 
 from . import criteria, models
+
+
+class NoNearbyFeatures:
+    pass
 
 
 class Annotations(collections.UserDict):
@@ -23,7 +31,9 @@ class Annotations(collections.UserDict):
 
 
 def set_gene_range(gene, strand, five_prime_ext=0):
-    """Assign a range to gene taking into account assumed 5' extension"""
+    """
+    Assign a range to gene taking into account assumed 5' extension.
+    """
     if strand == "+":
         gene.start -= five_prime_ext
     else:
@@ -31,7 +41,27 @@ def set_gene_range(gene, strand, five_prime_ext=0):
     gene.range = range(gene.start, gene.end)
 
 
-def annotate_utr_for_peak(db, annotations, peak, max_distance, override_utr, five_prime_ext):
+def _iter_peaks(db, peaks_batch, queue, args):
+    for peak in peaks_batch:
+        annotate_utr_for_peak(db, queue, peak, args.max_distance, args.override_utr, args.five_prime_ext)         
+
+
+def batch_annotate_strand(db, peaks_batch, queue, args):
+    """
+    Create multiprocessing Process to handle batch of peaks. Connect to sqlite3 db for each batch to prevent
+    serialization issues.
+    """
+    db = sqlite3.connect(db, check_same_thread=False)
+    db = gffutils.FeatureDB(db)
+    return multiprocessing.Process(target=_iter_peaks, args=(db, peaks_batch, queue, args))
+
+
+def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, five_prime_ext=0):
+    """
+    Find genes in region of given peak and apply criteria to determine if 3' UTR exists for each.
+    If so, add to multiprocessing Queue.
+    """
+    utr_found = False
     genes = list(db.region(
         seqid=peak.chr,
         start=peak.start - max_distance,
@@ -61,7 +91,11 @@ def annotate_utr_for_peak(db, annotations, peak, max_distance, override_utr, fiv
                 if utr.is_valid():
                     logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                     utr.generate_feature(gene)
-                    annotations[gene.id] = utr
+                    queue.put({gene.id: utr})
+                    utr_found = True
     else:
         logging.debug("No features found near peak %s" % peak.name)
-        annotations.no_features_counter += 1
+        queue.put(NoNearbyFeatures)
+        return
+    if not utr_found:
+        queue.put(None)

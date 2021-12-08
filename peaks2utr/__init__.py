@@ -2,15 +2,17 @@ import argparse
 import asyncio
 import csv
 import logging
+import math
+import multiprocessing
 import os
 import os.path
 import sys
 
 from tqdm import tqdm
 
-from . import constants, criteria, models
-from .annotations import Annotations, annotate_utr_for_peak
-from .utils import cached, format_stats_line, multiprocess_over_iterable
+from . import constants, models
+from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
+from .utils import cached, multiprocess_over_iterable, iter_batches, yield_from_process
 from .preprocess import call_peaks, create_db, pysam_strand_split
 
 
@@ -73,20 +75,34 @@ async def main():
         call_peaks(bam_basename, "reverse")
     )
 
-    annotations = Annotations()
-    total_peaks = 0
-    for strand in ["forward", "reverse"]:
-        with open(cached(strand + "_peaks.broadPeak"), 'r') as fin:
-            peaks = list(csv.reader(fin, delimiter="\t"))
-            total_peaks += len(peaks)
-            logging.info("Iterating over %s strand peaks to annotate 3' UTRs." % strand)
-            for peak in tqdm(peaks):
-                peak = models.Peak(*peak)
-                peak.strand = constants.STRAND_MAP.get(strand)
-                annotate_utr_for_peak(db, annotations, peak, args.max_distance, args.override_utr, args.five_prime_ext)
-    with open('three_prime_UTRs.gff', 'w') as fout:
-        logging.info("Writing annotations to GFF output file.")
-        fout.writelines(annotations)
+        def parse_peaks(strand):
+            with open(cached(strand + "_peaks.broadPeak"), 'r') as fin:
+                peaks = [models.Peak(*peak) for peak in csv.reader(fin, delimiter="\t")]
+                for peak in peaks:
+                    peak.strand = constants.STRAND_MAP.get(strand)
+                return peaks
+                
+        peaks = parse_peaks('forward') + parse_peaks('reverse')
+        total_peaks = len(peaks)
+        queue = multiprocessing.Queue()
+        
+        processes = [batch_annotate_strand(db, batch, queue, args) for batch in iter_batches(peaks, math.ceil(total_peaks/args.processors))]
+        for p in processes:
+            p.start()
+
+        annotations = Annotations()
+        with tqdm(total=total_peaks, desc=f'{"INFO": <8} Iterating over peaks to annotate 3\' UTRs.') as pbar:            
+            for p in processes:
+                for result in yield_from_process(queue, p, pbar):
+                    if result:
+                        if result is NoNearbyFeatures:
+                            annotations.no_features_counter += 1
+                        else:
+                            annotations.update(result)
+        
+        with open(constants.THREE_PRIME_UTR_GFF_FN, 'w') as fout:
+            logging.info("Writing annotations to GFF output file.")
+            fout.writelines(annotations)
     with open('summary_stats.txt', 'w') as fstats:
         logging.info("Writing summary statistics file.")
         fstats.write(format_stats_line("Total peaks", total_peaks))

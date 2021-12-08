@@ -1,5 +1,6 @@
 import logging
 
+from .utils import Counter
 
 class CriteriaFailure(Exception):
     pass
@@ -16,7 +17,7 @@ def track_failed_peaks(f):
             peak = kwargs.get('peak', args[0])
             wrapped.fails.add(peak.name)
             raise
-    wrapped.fails = set()
+    wrapped.fails = Counter()
     return wrapped
 
 
