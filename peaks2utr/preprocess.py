@@ -32,7 +32,7 @@ async def create_db(gff_in):
     gff_db = cached(os.path.basename(os.path.splitext(gff_in)[0] + '.db'))
     if not os.path.isfile(gff_db):
         logging.info('Creating gff db.')
-        await sync_to_async(gffutils.create_db)(gff_in, gff_db, force=True)
+        await sync_to_async(gffutils.create_db)(gff_in, gff_db, force=True, verbose=True, disable_infer_genes=True, disable_infer_transcripts=True)
         logging.info('Finished creating gff db.')
     return gff_db
 
