@@ -14,7 +14,7 @@ from constants import CACHE_DIR, LOG_DIR, PYSAM_STRAND_ARGS
 def pysam_strand_split(bam_basename, args, strand):
     if not os.path.isfile(cached(bam_basename + '.%s.bam' % strand)):
         logging.info("Splitting %s strand from %s." % (strand, args.BAM_IN))
-        pysam.view("--threads", "6", "-b", *PYSAM_STRAND_ARGS[strand], "-o", cached(bam_basename + '.%s.bam' % strand), args.BAM_IN, catch_stdout=False)
+        pysam.view("--threads", args.processors, "-b", *PYSAM_STRAND_ARGS[strand], "-o", cached(bam_basename + '.%s.bam' % strand), args.BAM_IN, catch_stdout=False)
         logging.info("Finished splitting %s strand." % strand)
 
 

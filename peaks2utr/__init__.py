@@ -31,6 +31,8 @@ def prepare_argparser():
     parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria")
     parser.add_argument('--five-prime-ext', type=int, default=0,
                         help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it')
+    parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
+    parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
     return parser
 
 
@@ -71,6 +73,9 @@ async def _main():
         argparser = prepare_argparser()
         args = argparser.parse_args()
 
+        if os.path.exists(constants.THREE_PRIME_UTR_GFF_FN) and not args.force:
+            logging.error("%s already exists. Re-run with -f flag to force overwrite of output files. Aborting." % constants.THREE_PRIME_UTR_GFF_FN)
+            sys.exit(1)
 
         bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
         multiprocess_over_iterable(['forward', 'reverse'], pysam_strand_split, [bam_basename, args])
