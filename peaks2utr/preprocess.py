@@ -1,28 +1,51 @@
 import asyncio
+from collections import defaultdict
 import logging
+import math
 import os.path
+import pickle
 
 from asgiref.sync import sync_to_async
 import gffutils
 import pysam
 
 from .exceptions import EXCEPTIONS_MAP
-from .utils import cached, consume_lines
-from .constants import CACHE_DIR, LOG_DIR, PYSAM_STRAND_ARGS
+from .models import SoftClippedRead
+from .utils import cached, consume_lines, filter_nested_dict
+from .constants import CACHE_DIR, LOG_DIR, STRAND_PYSAM_ARGS
+
+
+def pysam_index(bam_file):
+    if not os.path.isfile(bam_file + '.bai'):
+        logging.info("Indexing BAM file.")
+        pysam.index(bam_file)
 
 
 def pysam_strand_split(strand, bam_basename, args):
     """
     Call 'samtools view' to split BAM_IN for each strand.
     """
-    if not os.path.isfile(cached(bam_basename + '.%s.bam' % strand)):
+    output_file = cached(bam_basename + '.%s.bam' % strand)
+    if not os.path.isfile(output_file) :
         logging.info("Splitting %s strand from %s." % (strand, args.BAM_IN))
+        processors = max(math.floor(args.processors / 2), 1)        
         try:
-            pysam.view("--threads", str(args.processors), "-b", *PYSAM_STRAND_ARGS[strand], "-o", cached(bam_basename + '.%s.bam' % strand), args.BAM_IN, catch_stdout=False)
+            pysam.view("--threads", str(processors), "-b", *STRAND_PYSAM_ARGS[strand], "-o", output_file, args.BAM_IN, catch_stdout=False)            
         except TypeError as e:
             logging.error("pysam returned an error: %s" % e)
             raise
-        logging.info("Finished splitting %s strand." % strand)
+        else:
+            logging.info("Finished splitting %s strand." % strand)
+            pysam_index(output_file)                        
+            samfile = pysam.AlignmentFile(output_file, "rb")
+            logging.info("Iterating over %s strand reads to determine pileups." % strand)
+            unmapped = defaultdict(lambda: defaultdict(int))
+            for seg in samfile.fetch():
+                read = SoftClippedRead(chr=seg.reference_name, start=seg.reference_start, end=seg.reference_end, cigar=seg.cigarstring, seq=seg.query_sequence, strand="reverse" if seg.is_reverse else "forward")
+                if read.poly_tail_exists():
+                    unmapped[read.chr][read.extremity] += 1
+            with open(cached(strand + "_unmapped.pickle"), "wb") as f:
+                pickle.dump(filter_nested_dict(unmapped, 10), f)
 
 
 async def create_db(gff_in):

@@ -99,3 +99,19 @@ def limit_memory(maxsize):
     """
     _, hard = resource.getrlimit(resource.RLIMIT_AS)
     resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
+
+
+def filter_nested_dict(node, threshold):
+    """
+    For an n-nested dictionary, filter out integer leaves with a minimum threashold value.
+    """
+    if isinstance(node, int):
+        if node >= threshold:
+            return node
+    else:
+        dupe_node = {}
+        for k, v in node.items():
+            cur_node = filter_nested_dict(v, threshold)
+            if cur_node:
+                dupe_node[k] = cur_node
+        return dupe_node or None

@@ -7,7 +7,12 @@ STRAND_MAP = {
     'reverse': '-',
 }
 
-PYSAM_STRAND_ARGS = {
+STRAND_CIGAR_SOFT_CLIP_REGEX = {
+    "forward": r"([0-9]+)S$",
+    "reverse": r"^([0-9]+)S"
+}
+
+STRAND_PYSAM_ARGS = {
     'forward': ["-F", "20"],
     'reverse': ["-f", "16"],
 }

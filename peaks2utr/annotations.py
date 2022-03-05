@@ -2,11 +2,13 @@ import collections
 import copy
 import logging
 import multiprocessing
+import pickle
 import sqlite3
 
 import gffutils
 
-from . import criteria, models
+from . import constants, criteria, models
+from .utils import cached
 
 
 class NoNearbyFeatures:
@@ -69,6 +71,10 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, fiv
         strand=peak.strand,
         featuretype=['gene', 'transcript', 'protein_coding_gene'])
     )
+    for k, v in constants.STRAND_MAP.items():
+        if peak.strand == v:
+            with open(cached(k + "_unmapped.pickle"), "rb") as f:
+                data = pickle.load(f)
     genes = list(reversed(genes)) if peak.strand == '-' else genes
     if genes:
         for idx, gene in enumerate(genes):
@@ -88,6 +94,12 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, fiv
             except criteria.CriteriaFailure as e:
                 logging.debug("%s - %s" % (type(e).__name__, e))
             else:
+                intersect = utr.range.intersection(map(int, sorted(data[peak.chr], key=int)))                
+                if intersect:                    
+                    if peak.strand == "+":                        
+                        utr.end = max(intersect)
+                    else:
+                        utr.start = min(intersect)
                 if utr.is_valid():
                     logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                     utr.generate_feature(gene)
