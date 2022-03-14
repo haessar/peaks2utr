@@ -74,7 +74,7 @@ def truncate_5_prime_end(peak, next_gene, utr):
     intersection and truncate if it exists.
     """
     if utr.range.intersection(next_gene.range):
-        logging.debug("Peak %s overlapping following gene %s: Truncating." % (peak.name, next_gene.id))
+        logging.debug("Peak %s overlapping following gene %s: Truncating" % (peak.name, next_gene.id))
         if peak.strand == "+":
             utr.end = next_gene.start
         else:
@@ -88,4 +88,4 @@ def belongs_to_next_gene(peak, next_gene):
     gene only.
     """
     if (peak.strand == "+" and peak.start > next_gene.start) or (peak.strand == "-" and peak.end < next_gene.end):
-        raise CriteriaFailure("Peak %s belongs entirely to following gene %s." % (peak.name, next_gene.id))
+        raise CriteriaFailure("Peak %s belongs entirely to following gene %s" % (peak.name, next_gene.id))
