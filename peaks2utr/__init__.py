@@ -32,6 +32,8 @@ def prepare_argparser():
     parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria")
     parser.add_argument('--five-prime-ext', type=int, default=0,
                         help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it')
+    parser.add_argument('--min-pileups', type=int, default=10, help='Minimum number of piled-up mapped reads for UTR cut-off.')
+    parser.add_argument('--min-poly-tail', type=int, default=10, help='Minimum length of poly-A/T tail considered in soft-clipped reads.')
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
     return parser

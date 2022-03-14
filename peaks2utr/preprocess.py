@@ -42,10 +42,10 @@ def pysam_strand_split(strand, bam_basename, args):
             unmapped = defaultdict(lambda: defaultdict(int))
             for seg in samfile.fetch():
                 read = SoftClippedRead(chr=seg.reference_name, start=seg.reference_start, end=seg.reference_end, cigar=seg.cigarstring, seq=seg.query_sequence, strand="reverse" if seg.is_reverse else "forward")
-                if read.poly_tail_exists():
+                if read.poly_tail_exists(args.min_poly_tail):
                     unmapped[read.chr][read.extremity] += 1
             with open(cached(strand + "_unmapped.pickle"), "wb") as f:
-                pickle.dump(filter_nested_dict(unmapped, 10), f)
+                pickle.dump(filter_nested_dict(unmapped, args.min_pileups), f)
 
 
 async def create_db(gff_in):

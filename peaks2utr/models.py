@@ -72,7 +72,7 @@ class UTR(RangeMixin):
 
 class SoftClippedRead:
     """
-    Read in SAM file format
+    Read in SAM file format.
     """
     def __init__(self, chr, start, end, cigar, seq, strand):
         self.chr = str(chr)
@@ -84,6 +84,9 @@ class SoftClippedRead:
 
     @property
     def len_soft_clipped(self):
+        """
+        Length of soft-clipped bases at end of read.
+        """
         pattern = STRAND_CIGAR_SOFT_CLIP_REGEX.get(self.strand)
         matches = re.search(pattern, self.cigar)
         if matches:
@@ -93,11 +96,17 @@ class SoftClippedRead:
     
     @property
     def extremity(self):
+        """
+        Furthest base from transcript, accounting for strand.
+        """
         if self.strand == "reverse":
             return self.start
         return self.end
 
     def poly_tail_exists(self, tail_len=10):
+        """
+        Return True if a poly-A/T tail of tail_len bases exists in soft-clipped portion of read.
+        """
         if self.len_soft_clipped > 0:
             soft_clipped = self.seq[:self.len_soft_clipped] if self.strand == "reverse" else self.seq[-self.len_soft_clipped:]
             if "T"*tail_len in soft_clipped or "A"*tail_len in soft_clipped:                
