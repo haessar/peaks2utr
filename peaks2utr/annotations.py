@@ -75,7 +75,7 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
         if peak.strand == v:
             with open(cached(k + "_unmapped.pickle"), "rb") as f:
                 data = pickle.load(f)
-    genes = list(reversed(genes)) if peak.strand == '-' else genes
+    genes = sorted(genes, key=lambda x: x.start, reverse=False if peak.strand == "+" else True)
     if genes:
         for idx, gene in enumerate(genes):
             try:
