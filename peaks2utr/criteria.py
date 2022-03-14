@@ -22,13 +22,24 @@ def track_failed_peaks(f):
 
 
 @track_failed_peaks
-def assert_not_already_annotated(peak, gene, db):
+def assert_whether_utr_already_annotated(peak, gene, db, override_utr, extend_utr):
     """
-    If the canonical annotation for this gene already contains a 'three_prime_UTR' annotation, we want to leave this as
-    is.
+    If the canonical annotation for this gene already contains a 'three_prime_UTR' annotation, we either want to
+    leave this as is, extend it or override it.
     """
-    if any(db.children(gene, featuretype='three_prime_UTR')):
-        raise CriteriaFailure("3' UTR already annotated for gene %s near peak %s" % (gene.id, peak.name))
+    existing_utrs = list(db.children(gene, featuretype='three_prime_UTR'))
+    if existing_utrs:
+        if len(existing_utrs) > 1:
+            logging.warning("Multiple existing 3' UTRs found for gene %s" % gene.id) 
+        if any((override_utr, extend_utr)):
+            min_utr = min(utr.start for utr in existing_utrs)
+            max_utr = max(utr.end for utr in existing_utrs)
+            if gene.strand == "+":
+                gene.end = min_utr if override_utr else max_utr            
+            else:
+                gene.start = max_utr if override_utr else min_utr            
+        else:
+            raise CriteriaFailure("3' UTR already annotated for gene %s near peak %s" % (gene.id, peak.name))
 
 
 @track_failed_peaks

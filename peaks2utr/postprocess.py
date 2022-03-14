@@ -14,7 +14,7 @@ def write_summary_stats(annotations, total_peaks):
         fstats.write(format_stats_line("Total 3' UTRs annotated", len(annotations)))
         fstats.write(format_stats_line("Peaks with no nearby features", total_peaks, annotations.no_features_counter))
         fstats.write(format_stats_line("Peaks corresponding to an already annotated 3' UTR", total_peaks,
-                                       criteria.assert_not_already_annotated.fails.value))
+                                       criteria.assert_whether_utr_already_annotated.fails.value))
         fstats.write(format_stats_line("Peaks contained within a feature", total_peaks,
                                        criteria.assert_not_a_subset.fails.value))
         fstats.write(format_stats_line("Peaks corresponding to 5'-end of a feature", total_peaks,

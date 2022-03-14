@@ -30,6 +30,7 @@ def prepare_argparser():
     parser.add_argument('--max-distance', type=int, default=200,
                         help='maximum distance in bases that UTR can be from a transcript')
     parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria")
+    parser.add_argument('--extend-utr', action="store_true", help="extend previously existing 3' UTR annotations where possible.")
     parser.add_argument('--five-prime-ext', type=int, default=0,
                         help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it')
     parser.add_argument('--min-pileups', type=int, default=10, help='Minimum number of piled-up mapped reads for UTR cut-off.')
@@ -79,6 +80,10 @@ async def _main():
 
         if os.path.exists(constants.THREE_PRIME_UTR_GFF_FN) and not args.force:
             logging.error("%s already exists. Re-run with -f flag to force overwrite of output files. Aborting." % constants.THREE_PRIME_UTR_GFF_FN)
+            sys.exit(1)
+
+        if args.override_utr and args.extend_utr:
+            logging.error("Only one of --extend-utr and --override-utr can be used simultaneously. Aborting.")
             sys.exit(1)
 
         bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])

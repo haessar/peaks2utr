@@ -45,7 +45,7 @@ def set_gene_range(gene, strand, five_prime_ext=0):
 
 def _iter_peaks(db, peaks_batch, queue, args):
     for peak in peaks_batch:
-        annotate_utr_for_peak(db, queue, peak, args.max_distance, args.override_utr, args.five_prime_ext)         
+        annotate_utr_for_peak(db, queue, peak, args.max_distance, args.override_utr, args.extend_utr, args.five_prime_ext)         
 
 
 def batch_annotate_strand(db, peaks_batch, queue, args):
@@ -58,7 +58,7 @@ def batch_annotate_strand(db, peaks_batch, queue, args):
     return multiprocessing.Process(target=_iter_peaks, args=(db, peaks_batch, queue, args))
 
 
-def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, five_prime_ext=0):
+def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, extend_utr=False, five_prime_ext=0):
     """
     Find genes in region of given peak and apply criteria to determine if 3' UTR exists for each.
     If so, add to multiprocessing Queue.
@@ -81,8 +81,7 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, fiv
             try:
                 gene = copy.deepcopy(genes[idx])
                 set_gene_range(gene, peak.strand)
-                if not override_utr:
-                    criteria.assert_not_already_annotated(peak, gene, db)
+                criteria.assert_whether_utr_already_annotated(peak, gene, db, override_utr, extend_utr)
                 criteria.assert_not_a_subset(peak, gene)
                 utr = models.UTR(start=peak.start, end=peak.end)
                 criteria.assert_3_prime_end_and_truncate(peak, gene, utr)
