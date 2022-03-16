@@ -14,8 +14,9 @@ from tqdm import tqdm
 from . import constants, models
 from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
 from .utils import cached, multiprocess_over_iterable, iter_batches, yield_from_process, limit_memory
-from .preprocess import call_peaks, create_db, pysam_strand_split
+from .preprocess import call_peaks, create_db, pysam_index, pysam_strand_split
 from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
+from .validation import matching_chr
 
 
 def prepare_argparser():
@@ -49,6 +50,8 @@ async def _main():
     """
     The main function / pipeline for peaks2utr.
     """
+    import time
+    start = time.time()
     try:
         # Change root logger level from WARNING (default) to NOTSET in order for all messages to be delegated.
         logging.getLogger().setLevel(logging.NOTSET)
@@ -86,6 +89,8 @@ async def _main():
             logging.error("Only one of --extend-utr and --override-utr can be used simultaneously. Aborting.")
             sys.exit(1)
 
+        # pysam_index(args.BAM_IN)
+
         bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
         multiprocess_over_iterable(['forward', 'reverse'], pysam_strand_split, [bam_basename, args])
 
@@ -94,6 +99,10 @@ async def _main():
             call_peaks(bam_basename, "forward"),
             call_peaks(bam_basename, "reverse")
         )
+
+        # if not matching_chr(db, args):
+        #     logging.error("No chromosome shared between GFF_IN and BAM_IN. Aborting.")
+        #     sys.exit(1)
 
         def parse_peaks(strand):
             with open(cached(strand + "_peaks.broadPeak"), 'r') as fin:
@@ -129,6 +138,7 @@ async def _main():
 
         logging.info("%s finished successfully." % __package__)
         await asyncio.sleep(1)
+        print(time.time() - start)
         sys.exit(0)
     except KeyboardInterrupt:
         logging.error("User interrupted processing. Aborting.")
