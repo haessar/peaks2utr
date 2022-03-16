@@ -99,6 +99,7 @@ async def _main(args):
     from .utils import cached, yield_from_process
     from .preprocess import BAMSplitter, call_peaks, create_db
     from .postprocess import merge_annotations, gt_gff3_sort, write_summary_stats
+    from .validation import matching_chr
 
     try:
         ###################
@@ -174,6 +175,10 @@ async def _main(args):
         ###################
         # Process peaks   #
         ###################
+
+        if not matching_chr(db, args):
+            logging.error("No chromosome shared between GFF_IN and BAM_IN. Aborting.")
+            sys.exit(1)
 
         annotations = AnnotationsDict(args=args)
         with AnnotationsPipeline(peaks, args, db_path=db) as pipeline:
