@@ -30,14 +30,16 @@ def assert_whether_utr_already_annotated(peak, gene, db, override_utr, extend_ut
     existing_utrs = list(db.children(gene, featuretype='three_prime_UTR'))
     if existing_utrs:
         if len(existing_utrs) > 1:
-            logging.warning("Multiple existing 3' UTRs found for gene %s" % gene.id) 
+            logging.debug("Multiple existing 3' UTRs found for gene %s" % gene.id) 
         if any((override_utr, extend_utr)):
-            min_utr = min(utr.start for utr in existing_utrs)
-            max_utr = max(utr.end for utr in existing_utrs)
+            min_start = min(utr.start for utr in existing_utrs)
+            min_end = min(utr.end for utr in existing_utrs)
+            max_start = max(utr.start for utr in existing_utrs)
+            max_end = max(utr.end for utr in existing_utrs)
             if gene.strand == "+":
-                gene.end = min_utr if override_utr else max_utr            
+                gene.end = max_start if override_utr else max_end            
             else:
-                gene.start = max_utr if override_utr else min_utr            
+                gene.start = min_end if override_utr else min_start            
         else:
             raise CriteriaFailure("3' UTR already annotated for gene %s near peak %s" % (gene.id, peak.name))
 
