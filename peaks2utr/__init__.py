@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 from . import constants, models
 from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
-from .utils import cached, multiprocess_over_iterable, iter_batches, yield_from_process, limit_memory
-from .preprocess import call_peaks, create_db, pysam_strand_split
+from .utils import cached, iter_batches, yield_from_process, limit_memory
+from .preprocess import BAMSplitter, call_peaks, create_db
 from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
 
 
@@ -33,6 +33,7 @@ def prepare_argparser():
     parser.add_argument('--extend-utr', action="store_true", help="extend previously existing 3' UTR annotations where possible.")
     parser.add_argument('--five-prime-ext', type=int, default=0,
                         help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it')
+    parser.add_argument('--skip-soft-clip', action="store_true", help="skip the resource-intensive logic to pileup soft-clipped read edges")
     parser.add_argument('--min-pileups', type=int, default=10, help='Minimum number of piled-up mapped reads for UTR cut-off.')
     parser.add_argument('--min-poly-tail', type=int, default=10, help='Minimum length of poly-A/T tail considered in soft-clipped reads.')
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
@@ -87,7 +88,11 @@ async def _main():
             sys.exit(1)
 
         bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
-        multiprocess_over_iterable(['forward', 'reverse'], pysam_strand_split, [bam_basename, args])
+        bs = BAMSplitter(bam_basename, args)
+        bs.split_strands()
+        if not args.skip_soft_clip:
+            bs.split_read_groups()
+            bs.pileup_soft_clipped_reads()
 
         db, _, _ = await asyncio.gather(
             create_db(args.GFF_IN),

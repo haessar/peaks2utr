@@ -38,23 +38,21 @@ async def consume_lines(pipe, log_file):
         while line := await pipe.readline():
             f.write(line)
 
-
-def multiprocess_over_iterable(iterable, function, args):
-    """
-    Assign a multiprocessing Process to call function for every item in iterable, passing this item
-    as the function's first argument.
-    Start each process and wait for them all to finish before returning.
-    """
-    jobs = []
-    for x in iterable:
-        p = multiprocessing.Process(target=function, args=[x] + args)
-        jobs.append(p)
-        p.start()
-    for job in jobs:
-        job.join()
-        if job.exitcode != 0:
-            raise EXCEPTIONS_MAP.get(function.__name__, Exception)
-
+def multiprocess_over_dict(f, d):
+        """
+        Assign a multiprocessing Process to call function f for every key-value pair in d, passing this item
+        as the function's first argument.
+        Start each process and wait for them all to finish before returning.
+        """
+        jobs = []
+        for input, output in d.items():
+            p = multiprocessing.Process(target=f, args=(input, output))
+            jobs.append(p)
+            p.start()
+        for job in jobs:
+            job.join()
+            if job.exitcode != 0:
+                raise EXCEPTIONS_MAP.get(function.__name__, Exception)
 
 def format_stats_line(msg, total, numerator=None):
     """
@@ -115,3 +113,19 @@ def filter_nested_dict(node, threshold):
             if cur_node:
                 dupe_node[k] = cur_node
         return dupe_node or None
+
+
+def sum_nested_dicts(d1, d2):
+    """
+    For an n-nested dictionary, sum numeric values in leaves with matching keys.
+    """
+    def sum(v1, v2):
+        if v2 is None:
+            return v1
+        try:
+            return v1 + v2
+        except TypeError:
+            return sum_nested_dicts(v1, v2)
+    result = d2.copy()
+    result.update({k: sum(v, d2.get(k)) for k, v in d1.items()})
+    return result

@@ -1,51 +1,107 @@
 import asyncio
 from collections import defaultdict
+from glob import glob
+import json
 import logging
-import math
 import os.path
-import pickle
+import re
 
 from asgiref.sync import sync_to_async
 import gffutils
 import pysam
+from tqdm import tqdm
 
 from .exceptions import EXCEPTIONS_MAP
 from .models import SoftClippedRead
-from .utils import cached, consume_lines, filter_nested_dict
+from .utils import cached, consume_lines, filter_nested_dict, sum_nested_dicts, multiprocess_over_dict
 from .constants import CACHE_DIR, LOG_DIR, STRAND_PYSAM_ARGS
 
 
-def pysam_index(bam_file):
-    if not os.path.isfile(bam_file + '.bai'):
-        logging.info("Indexing BAM file.")
-        pysam.index(bam_file)
-
-
-def pysam_strand_split(strand, bam_basename, args):
-    """
-    Call 'samtools view' to split BAM_IN for each strand.
-    """
-    output_file = cached(bam_basename + '.%s.bam' % strand)
-    if not os.path.isfile(output_file) :
-        logging.info("Splitting %s strand from %s." % (strand, args.BAM_IN))
-        processors = max(math.floor(args.processors / 2), 1)        
-        try:
-            pysam.view("--threads", str(processors), "-b", *STRAND_PYSAM_ARGS[strand], "-o", output_file, args.BAM_IN, catch_stdout=False)            
-        except TypeError as e:
-            logging.error("pysam returned an error: %s" % e)
-            raise
-        else:
-            logging.info("Finished splitting %s strand." % strand)
-            pysam_index(output_file)                        
-            samfile = pysam.AlignmentFile(output_file, "rb")
-            logging.info("Iterating over %s strand reads to determine pileups." % strand)
-            unmapped = defaultdict(lambda: defaultdict(int))
-            for seg in samfile.fetch():
-                read = SoftClippedRead(chr=seg.reference_name, start=seg.reference_start, end=seg.reference_end, cigar=seg.cigarstring, seq=seg.query_sequence, strand="reverse" if seg.is_reverse else "forward")
-                if read.poly_tail_exists(args.min_poly_tail):
-                    unmapped[read.chr][read.extremity] += 1
-            with open(cached(strand + "_unmapped.pickle"), "wb") as f:
-                pickle.dump(filter_nested_dict(unmapped, args.min_pileups), f)
+class BAMSplitter:
+    def __init__(self, bam_basename, args):
+        self.basename = bam_basename
+        self.args = args
+        self.pbar = None
+    
+    def split_strands(self):
+        for strand in ["forward", "reverse"]:
+            output_file = cached(self.basename + '.%s.bam' % strand)
+            if not os.path.isfile(output_file):
+                logging.info("Splitting %s strand from %s." % (strand, self.args.BAM_IN))
+                try:
+                    pysam.view("--threads", str(self.args.processors), "-b", *STRAND_PYSAM_ARGS[strand], "-o", output_file, self.args.BAM_IN, catch_stdout=False)            
+                except TypeError as e:
+                    logging.error("pysam returned an error: %s" % e)
+                    raise
+                else:
+                    logging.info("Finished splitting %s strand." % strand)
+    
+    @staticmethod
+    def num_read_groups(bam):
+        header = pysam.view("-H", bam).split("\n")
+        return len([h for h in header if h.startswith("@RG")])
+    
+    def split_read_groups(self):
+        for strand in ["forward", "reverse"]:
+            input_bam = cached(self.basename + '.%s.bam' % strand)
+            if len(glob(cached(self.basename + ".%s_*.bam" % strand))) < self.num_read_groups(input_bam):
+                logging.info("Splitting %s-stranded BAM file into read-groups." % strand)
+                pysam.split("-@", str(self.args.processors), "-f", cached("%*_%#.%."), input_bam)
+            
+        self.read_group_bams = sorted(glob(cached(self.basename + ".forward_*.bam")) + glob(cached(self.basename + ".reverse_*.bam")),
+                                      key = lambda x: os.stat(x).st_size,
+                                      reverse=True)
+        self.outputs = {bf: cached(re.search( r'%s.(.*).bam$' % self.basename, os.path.basename(bf)).group(1) + "_unmapped.json") for bf in self.read_group_bams}
+        self.full_outputs = self.outputs.copy()
+    
+    def index_bam_file(self, bam_file):
+        if not os.path.isfile(cached(bam_file + '.bai')):
+            logging.info("Indexing %s." % bam_file)
+            pysam.index("-@", str(self.args.processors), bam_file)
+    
+    def _get_max_reads_for_pbar(self):
+        max_reads = 0
+        for bf in self.read_group_bams:
+            if not os.path.isfile(self.outputs[bf]):
+                self.index_bam_file(bf)
+                idxstats = pysam.idxstats(bf).split('\n')
+                num_reads = sum([int(chr.split("\t")[2]) + int(chr.split("\t")[3]) for chr in idxstats[:-1]])
+                if num_reads > max_reads:
+                    max_reads = num_reads
+                    self.max_bam = bf
+            else:
+                del self.outputs[bf]
+        return max_reads        
+    
+    def pileup_soft_clipped_reads(self):
+        max_reads = self._get_max_reads_for_pbar()
+        with tqdm(total=max_reads,
+                  desc=f'{"INFO": <8} Iterating over reads to determine pileups',
+                  bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]') as self.pbar:
+            multiprocess_over_dict(self._count_unmapped_pileups, self.outputs)
+        
+        logging.info('Merging outputs.')
+        for strand in ["forward", "reverse"]:
+            strand_output = {}
+            for output in self.full_outputs.values():
+                if strand in os.path.basename(output):
+                    with open(output, 'r') as f:
+                        strand_output = sum_nested_dicts(strand_output, json.load(f))
+            with open(cached("%s_unmapped.json" % strand), "w") as f:
+                json.dump(filter_nested_dict(strand_output, self.args.min_pileups), f)
+    
+    def _count_unmapped_pileups(self, bam_file, output_file):
+        samfile = pysam.AlignmentFile(bam_file, "rb")            
+        unmapped = defaultdict(lambda: defaultdict(int))
+        for seg in samfile.fetch(until_eof=True):
+            read = SoftClippedRead(chr=seg.reference_name, start=seg.reference_start, end=seg.reference_end, cigar=seg.cigarstring, seq=seg.query_sequence, strand="reverse" if seg.is_reverse else "forward")
+            if read.poly_tail_exists(self.args.min_poly_tail):
+                unmapped[read.chr][read.extremity] += 1
+            if bam_file == self.max_bam:
+                self.pbar.update()
+                    
+        with open(output_file, "w") as f:
+            json.dump(unmapped, f)
 
 
 async def create_db(gff_in):
