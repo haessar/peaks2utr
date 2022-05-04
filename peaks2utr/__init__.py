@@ -29,12 +29,12 @@ def prepare_argparser():
     parser.add_argument('GFF_IN', help="input 'canonical' annotations file in gff or gtf format.")
     parser.add_argument('BAM_IN', help="input reads file in bam format.")
     parser.add_argument('--max-distance', type=int, default=200,
-                        help='maximum distance in bases that UTR can be from a transcript')
-    parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria")
+                        help='maximum distance in bases that UTR can be from a transcript.')
+    parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria.")
     parser.add_argument('--extend-utr', action="store_true", help="extend previously existing 3' UTR annotations where possible.")
     parser.add_argument('--five-prime-ext', type=int, default=0,
-                        help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it')
-    parser.add_argument('--skip-soft-clip', action="store_true", help="skip the resource-intensive logic to pileup soft-clipped read edges")
+                        help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it.')
+    parser.add_argument('--skip-soft-clip', action="store_true", help="skip the resource-intensive logic to pileup soft-clipped read edges.")
     parser.add_argument('--min-pileups', type=int, default=10, help='Minimum number of piled-up mapped reads for UTR cut-off.')
     parser.add_argument('--min-poly-tail', type=int, default=10, help='Minimum length of poly-A/T tail considered in soft-clipped reads.')
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
@@ -60,7 +60,7 @@ async def _main():
         # Add stdout handler, with level INFO.
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(logging.INFO)
-        formatter = logging.Formatter('%(levelname)-8s %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         console.setFormatter(formatter)
         logging.getLogger().addHandler(console)
 
@@ -71,7 +71,6 @@ async def _main():
         # Add file handler, with level DEBUG.
         fileHandler = logging.FileHandler(filename=os.path.join(constants.LOG_DIR, '{}_debug.log'.format(__package__)), mode="w")
         fileHandler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fileHandler.setFormatter(formatter)
         logging.getLogger().addHandler(fileHandler)        
 
