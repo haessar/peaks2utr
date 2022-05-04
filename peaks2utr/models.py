@@ -46,14 +46,25 @@ class UTR(RangeMixin):
     def __eq__(self, other):
         return self.range == other.range
 
-    def generate_feature(self, gene):
+    def _get_id(self, gene, db):
+        existing_utrs = list(db.children(gene, featuretype=['three_prime_UTR', 'three_prime_utr'])) + list(db.children(gene, featuretype=['five_prime_UTR', 'five_prime_utr']))
+        if existing_utrs:
+            max_utr = sorted([utr.id for utr in existing_utrs], reverse=True)[0]
+            max_idx = int(max_utr[-1])
+            max_utr_basename = max_utr[:-1]
+            return max_utr_basename + str(max_idx + 1)
+        else:
+            return "utr_" + gene.id + ":mRNA_1"
+
+    def generate_feature(self, gene, db, colour="3"):
         """
         Generate three_prime_UTR feature in gff3 format.
         """
         attrs = dict(gene.attributes)
         attrs.pop('ID', None)
+        attrs["ID"] = [self._get_id(gene, db)]
         attrs['Parent'] = [gene.id]
-        attrs['colour'] = ['3']
+        attrs['colour'] = [colour]
         self.feature = gffutils.Feature(
             seqid=gene.chrom,
             source=__package__,

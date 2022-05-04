@@ -21,6 +21,5 @@ CACHE_DIR = os.path.join(os.getcwd(), '.cache')
 LOG_DIR = os.path.join(os.getcwd(), '.log')
 
 TMP_GFF_FN = "_tmp.gff"
-THREE_PRIME_UTR_GFF_FN = "three_prime_UTRs.gff"
 
 PERC_ALLOCATED_VRAM= 75

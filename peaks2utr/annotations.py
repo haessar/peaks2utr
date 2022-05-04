@@ -20,16 +20,19 @@ class Annotations(collections.UserDict):
         super().__init__()
         self.no_features_counter = 0
 
-    def __setitem__(self, gene, new_utr):
-        existing_utr = self.get(gene)
-        if existing_utr:
-            if new_utr.range.issubset(existing_utr.range):
+    def __setitem__(self, gene, new_features):
+        existing_features = self.get(gene)
+        if existing_features:
+            if new_features["utr"].range.issubset(existing_features["utr"].range):
                 return
-        self.data[gene] = new_utr
+        self.data[gene] = new_features
 
     def __iter__(self):
-        for _, utr in self.data.items():
-            yield str(utr.feature) + '\n'
+        for _, features in self.data.items():            
+            nf = features.copy()
+            if "utr" in nf:
+                nf["utr"] = nf["utr"].feature
+            yield '\n'.join([str(f) for _, f in nf.items()]) + '\n'
 
 
 def set_gene_range(gene, strand, five_prime_ext=0):
@@ -93,16 +96,23 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
             except criteria.CriteriaFailure as e:
                 logging.debug("%s - %s" % (type(e).__name__, e))
             else:
-                intersect = utr.range.intersection(map(int, sorted(data[peak.chr], key=int))) if peak.chr in data else None                
+                colour="3"
                 if intersect:                    
                     if peak.strand == "+":                        
                         utr.end = max(intersect)
                     else:
                         utr.start = min(intersect)
+                    colour="4"
                 if utr.is_valid():
                     logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
-                    utr.generate_feature(gene)
-                    queue.put({gene.id: utr})
+                    utr.generate_feature(gene, db, colour)
+                    if peak.strand == "+":
+                        gene.end = utr.end
+                    else:
+                        gene.start = utr.start
+                    features = {"gene": gene, "utr": utr}
+                    features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(gene)))})
+                    queue.put({gene.id: features})
                     utr_found = True
     else:
         logging.debug("No features found near peak %s" % peak.name)

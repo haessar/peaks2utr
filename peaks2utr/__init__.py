@@ -79,8 +79,11 @@ async def _main():
         argparser = prepare_argparser()
         args = argparser.parse_args()
 
-        if os.path.exists(constants.THREE_PRIME_UTR_GFF_FN) and not args.force:
-            logging.error("%s already exists. Re-run with -f flag to force overwrite of output files. Aborting." % constants.THREE_PRIME_UTR_GFF_FN)
+        gff_basename = os.path.basename(os.path.splitext(args.GFF_IN)[0])
+        new_gff_fn = gff_basename + ".new.gff" if not args.output else args.output
+
+        if os.path.exists(new_gff_fn) and not args.force:
+            logging.error("%s already exists. Re-run with -f flag to force overwrite of output files. Aborting." % new_gff_fn)
             sys.exit(1)
 
         if args.override_utr and args.extend_utr:
@@ -124,12 +127,8 @@ async def _main():
                             annotations.no_features_counter += 1
                         else:
                             annotations.update(result)
-        
-        with open(constants.THREE_PRIME_UTR_GFF_FN, 'w') as fout:
-            logging.info("Writing annotations to GFF output file.")
-            fout.writelines(annotations)
 
-        merge_and_gt_gff3_sort(annotations, args)
+        merge_and_gt_gff3_sort(db, annotations, new_gff_fn, args)
         write_summary_stats(annotations, total_peaks)
 
         logging.info("%s finished successfully." % __package__)
