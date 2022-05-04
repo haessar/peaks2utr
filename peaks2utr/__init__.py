@@ -6,6 +6,7 @@ import math
 import multiprocessing
 import os
 import os.path
+import shutil
 import sys
 
 import psutil
@@ -38,6 +39,8 @@ def prepare_argparser():
     parser.add_argument('--min-poly-tail', type=int, default=10, help='Minimum length of poly-A/T tail considered in soft-clipped reads.')
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
+    parser.add_argument('-o', '--output', help="output filename.")
+    parser.add_argument('--keep-cache', action="store_true", help="Keep cached files on run completion.")
     return parser
 
 
@@ -137,3 +140,7 @@ async def _main():
     except KeyboardInterrupt:
         logging.error("User interrupted processing. Aborting.")
         sys.exit(130)
+    finally:
+        if not args.keep_cache:
+            logging.info("Clearing cache.")
+            shutil.rmtree(constants.CACHE_DIR)
