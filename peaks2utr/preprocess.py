@@ -35,6 +35,8 @@ class BAMSplitter:
                     raise
                 else:
                     logging.info("Finished splitting %s strand." % strand)
+            else:
+                logging.info("Using cached %s strand BAM file." % strand)
     
     @staticmethod
     def num_read_groups(bam):
@@ -74,21 +76,25 @@ class BAMSplitter:
         return max_reads        
     
     def pileup_soft_clipped_reads(self):
-        max_reads = self._get_max_reads_for_pbar()
-        with tqdm(total=max_reads,
-                  desc=f'{"INFO": <8} Iterating over reads to determine pileups',
-                  bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]') as self.pbar:
-            multiprocess_over_dict(self._count_unmapped_pileups, self.outputs)
-        
-        logging.info('Merging outputs.')
-        for strand in ["forward", "reverse"]:
-            strand_output = {}
-            for output in self.full_outputs.values():
-                if strand in os.path.basename(output):
-                    with open(output, 'r') as f:
-                        strand_output = sum_nested_dicts(strand_output, json.load(f))
-            with open(cached("%s_unmapped.json" % strand), "w") as f:
-                json.dump(filter_nested_dict(strand_output, self.args.min_pileups), f)
+        if not os.path.isfile(cached("forward_unmapped.json")) or not os.path.isfile(cached("reverse_unmapped.json")):        
+            max_reads = self._get_max_reads_for_pbar()
+            if self.outputs and max_reads > 0:
+                with tqdm(total=max_reads,
+                        desc=f'{"INFO": <8} Iterating over reads to determine SPAT pileups',
+                        bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]') as self.pbar:
+                    multiprocess_over_dict(self._count_unmapped_pileups, self.outputs)
+            
+            logging.info('Merging SPAT outputs.')
+            for strand in ["forward", "reverse"]:
+                strand_output = {}
+                for output in self.full_outputs.values():
+                    if strand in os.path.basename(output):
+                        with open(output, 'r') as f:
+                            strand_output = sum_nested_dicts(strand_output, json.load(f))
+                with open(cached("%s_unmapped.json" % strand), "w") as f:
+                    json.dump(filter_nested_dict(strand_output, self.args.min_pileups), f)
+        else:
+            logging.info("Using cached SPAT pileups.")
     
     def _count_unmapped_pileups(self, bam_file, output_file):
         samfile = pysam.AlignmentFile(bam_file, "rb")            
@@ -113,6 +119,8 @@ async def create_db(gff_in):
         logging.info('Creating gff db.')
         await sync_to_async(gffutils.create_db)(gff_in, gff_db, force=True, verbose=True, disable_infer_genes=True, disable_infer_transcripts=True)
         logging.info('Finished creating gff db.')
+    else:        
+        logging.info("Using cached gff db.")
     return gff_db
 
 
