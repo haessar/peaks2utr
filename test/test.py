@@ -1,6 +1,7 @@
 import csv
 from queue import Queue
 import unittest
+from unittest import mock
 
 import gffutils
 
@@ -21,7 +22,9 @@ class TestUTRAnnotation(unittest.TestCase):
                     annotations = Annotations()
                     queue = Queue()
                     peak.strand = strand
-                    annotate_utr_for_peak(self.db, queue, peak, max_distance=max_distance)
+                    with mock.patch('peaks2utr.annotations.cached') as cached_mock:
+                        cached_mock.return_value = "test/unmapped.json"
+                        annotate_utr_for_peak(self.db, queue, peak, max_distance=max_distance)
                     if expected_annotations[peak.name] is None:
                         self.assertIsNone(queue.get())                        
                     elif expected_annotations[peak.name] is NoNearbyFeatures:
@@ -33,7 +36,7 @@ class TestUTRAnnotation(unittest.TestCase):
                                 annotations.update(result)
                         for gene in expected_annotations[peak.name].keys():
                             self.assertIn(gene, annotations)
-                        self.assertDictEqual(annotations.data, expected_annotations[peak.name])
+                            self.assertEqual(annotations.data[gene]['utr'], expected_annotations[peak.name][gene])
 
     def test_forward_strand_annotations(self):
         expected_annotations = {
