@@ -39,20 +39,20 @@ async def consume_lines(pipe, log_file):
             f.write(line)
 
 def multiprocess_over_dict(f, d):
-        """
-        Assign a multiprocessing Process to call function f for every key-value pair in d, passing this item
-        as the function's first argument.
-        Start each process and wait for them all to finish before returning.
-        """
-        jobs = []
-        for input, output in d.items():
-            p = multiprocessing.Process(target=f, args=(input, output))
-            jobs.append(p)
-            p.start()
-        for job in jobs:
-            job.join()
-            if job.exitcode != 0:
-                raise EXCEPTIONS_MAP.get(function.__name__, Exception)
+    """
+    Assign a multiprocessing Process to call function f for every key-value pair in d, passing this item
+    as the function's first argument.
+    Start each process and wait for them all to finish before returning.
+    """
+    jobs = []
+    for input, output in d.items():
+        p = multiprocessing.Process(target=f, args=(input, output))
+        jobs.append(p)
+        p.start()
+    for job in jobs:
+        job.join()
+        if job.exitcode != 0:
+            raise EXCEPTIONS_MAP.get(function.__name__, Exception)
 
 def format_stats_line(msg, total, numerator=None):
     """
