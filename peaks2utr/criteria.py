@@ -27,7 +27,7 @@ def assert_whether_utr_already_annotated(peak, gene, db, override_utr, extend_ut
     If the canonical annotation for this gene already contains a 'three_prime_UTR' annotation, we either want to
     leave this as is, extend it or override it.
     """
-    existing_utrs = list(db.children(gene, featuretype='three_prime_UTR'))
+    existing_utrs = list(db.children(gene, featuretype=['three_prime_UTR', 'three_prime_utr']))
     if existing_utrs:
         if len(existing_utrs) > 1:
             logging.debug("Multiple existing 3' UTRs found for gene %s" % gene.id) 
