@@ -77,7 +77,7 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
     for k, v in constants.STRAND_MAP.items():
         if peak.strand == v:
             with open(cached(k + "_unmapped.json"), "r") as f:
-                data = json.load(f)
+                spat_pileups = json.load(f)
     genes = sorted(genes, key=lambda x: x.start, reverse=False if peak.strand == "+" else True)
     if genes:
         for idx, gene in enumerate(genes):
@@ -96,6 +96,7 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
             except criteria.CriteriaFailure as e:
                 logging.debug("%s - %s" % (type(e).__name__, e))
             else:
+                intersect = utr.range.intersection(map(int, sorted(spat_pileups[peak.chr], key=int))) if peak.chr in spat_pileups else None                
                 colour="3"
                 if intersect:                    
                     if peak.strand == "+":                        
