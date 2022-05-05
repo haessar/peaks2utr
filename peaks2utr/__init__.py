@@ -140,6 +140,9 @@ async def _main():
         logging.error("User interrupted processing. Aborting.")
         sys.exit(130)
     finally:
-        if not args.keep_cache:
-            logging.info("Clearing cache.")
-            shutil.rmtree(constants.CACHE_DIR)
+        try:
+            if not args.keep_cache:
+                logging.info("Clearing cache.")
+                shutil.rmtree(constants.CACHE_DIR)
+        except NameError:
+            pass
