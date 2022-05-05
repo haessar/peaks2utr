@@ -1,32 +1,13 @@
-# 3pUTR_annotation
-## Quick Start
-### 1. Install dependencies
-
-Execute these commands as root
+# peaks2utr: a robust, parallelized Python CLI for annotating 3' UTR
+<!-- ## Quick Start -->
+## Installation
+Install latest release with:
 ```
-apt update
-apt -y upgrade
-apt install -y --no-install-recommends build-essential libssl-dev libffi-dev python3.8 python3-dev python3-pip git samtools genometools wget file
+pip install peaks2utr
 ```
 
-Install docopts
+## Quick start
+Download demo gff <a href="https://github.com/haessar/peaks2utr/raw/master/demo/Tb927_01_v5.1.gff" target="_blank" >Tb927_01_v5.1.gff</a> and bam file <a href="https://github.com/haessar/peaks2utr/raw/master/demo/Tb927_01_v5.1.slice.bam" target="_blank" >Tb927_01_v5.1.slice.bam</a> and run
 ```
-git clone https://github.com/docopt/docopts.git
-cd docopts
-./get_docopts.sh && \
-cp docopts docopts.sh /usr/local/bin
-cd ..
-```
-
-Install python packages
-```
-pip3 install build gffutils MACS2
-```
-
-### 2. Install 3pUTR_annotation code
-```
-git clone git@github.com:haessar/3pUTR_annotation.git
-cd 3pUTR_annotation
-python3 -m build
-pip install dist/3pUTR_annotation-<version>.tar.gz
+peaks2utr Tb927_01_v5.1.gff Tb927_01_v5.1.slice.bam
 ```
