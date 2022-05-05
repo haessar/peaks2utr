@@ -77,7 +77,7 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
     for k, v in constants.STRAND_MAP.items():
         if peak.strand == v:
             with open(cached(k + "_unmapped.json"), "r") as f:
-                spat_pileups = json.load(f)
+                spat_pileups = json.load(f) or {}
     genes = sorted(genes, key=lambda x: x.start, reverse=False if peak.strand == "+" else True)
     if genes:
         for idx, gene in enumerate(genes):
