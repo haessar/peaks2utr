@@ -14,7 +14,7 @@ out_dir = os.path.join(base_dir, "output")
 Path(out_dir).mkdir(parents=True, exist_ok=True)
 new = os.path.join(base_dir, "input/peaks2utr_output.gff3")
 
-db_new = gffutils.create_db(new, os.path.join(out_dir, "new_full.db"), force=True)
+db_new = gffutils.create_db(new, os.path.join(out_dir, "peaks2utr.db"), force=True)
 
 
 #%%
