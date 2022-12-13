@@ -1,0 +1,30 @@
+# gffcompare v0.12.6 | Command line was:
+#/home/haessar/gffcompare-0.12.6.Linux_x86_64/gffcompare -r input/WormBase.I.three_prime_UTR.gff3 input/utrme_output.gff3 -o gffcmp/utrme
+#
+
+#= Summary for dataset: input/utrme_output.gff3 
+#     Query mRNAs :       6 in       6 loci  (6 multi-exon transcripts)
+#            (0 multi-transcript loci, ~1.0 transcripts per locus)
+# Reference mRNAs :    3165 in    2616 loci  (181 multi-exon)
+# Super-loci w/ reference transcripts:        6
+#-----------------| Sensitivity | Precision  |
+        Base level:    25.1     |    36.4    |
+        Exon level:     0.1     |     0.8    |
+      Intron level:     0.0     |     0.0    |
+Intron chain level:     0.0     |     0.0    |
+  Transcript level:     0.0     |     0.0    |
+       Locus level:     0.0     |     0.0    |
+
+     Matching intron chains:       0
+       Matching transcripts:       0
+              Matching loci:       0
+
+          Missed exons:    2882/3451	( 83.5%)
+           Novel exons:     127/510	( 24.9%)
+        Missed introns:     218/274	( 79.6%)
+         Novel introns:     484/504	( 96.0%)
+           Missed loci:    2234/2616	( 85.4%)
+            Novel loci:       0/6	(  0.0%)
+
+ Total union super-loci across all input datasets: 6 
+6 out of 6 consensus transcripts written in gffcmp/utrme.annotated.gtf (0 discarded as redundant)
