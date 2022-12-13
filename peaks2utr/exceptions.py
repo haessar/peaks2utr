@@ -1,3 +1,6 @@
+class PybedtoolsError(Exception):
+    pass
+
 class PysamError(Exception):
     pass
 
@@ -7,6 +10,7 @@ class MACS2Error(Exception):
 
 
 EXCEPTIONS_MAP = {
-    "pysam_strand_split": PysamError,
+    "_filter_low_coverage_intervals": PybedtoolsError,
+    "_count_unmapped_pileups": PysamError,
     "call_peaks": MACS2Error,
 }

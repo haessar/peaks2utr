@@ -8,6 +8,7 @@ import re
 
 from asgiref.sync import sync_to_async
 import gffutils
+import pybedtools
 import pysam
 from tqdm import tqdm
 
@@ -24,6 +25,7 @@ class BAMSplitter:
         self.pbar = None
     
     def split_strands(self):
+        self.gap_outputs = {}
         for strand in ["forward", "reverse"]:
             output_file = cached(self.basename + '.%s.bam' % strand)
             if not os.path.isfile(output_file):
@@ -37,6 +39,8 @@ class BAMSplitter:
                     logging.info("Finished splitting %s strand." % strand)
             else:
                 logging.info("Using cached %s strand BAM file." % strand)
+            self.gap_outputs[output_file] = cached("%s_coverage_gaps.bed" % strand)
+        self.gap_outputs_to_process = self.gap_outputs.copy()
     
     @staticmethod
     def num_read_groups(bam):
@@ -53,8 +57,8 @@ class BAMSplitter:
         self.read_group_bams = sorted(glob(cached(self.basename + ".forward_*.bam")) + glob(cached(self.basename + ".reverse_*.bam")),
                                       key = lambda x: os.stat(x).st_size,
                                       reverse=True)
-        self.outputs = {bf: cached(re.search( r'%s.(.*).bam$' % self.basename, os.path.basename(bf)).group(1) + "_unmapped.json") for bf in self.read_group_bams}
-        self.full_outputs = self.outputs.copy()
+        self.spat_outputs = {bf: cached(re.search( r'%s.(.*).bam$' % self.basename, os.path.basename(bf)).group(1) + "_unmapped.json") for bf in self.read_group_bams}
+        self.spat_outputs_to_process = self.spat_outputs.copy()
     
     def index_bam_file(self, bam_file):
         if not os.path.isfile(cached(bam_file + '.bai')):
@@ -64,7 +68,7 @@ class BAMSplitter:
     def _get_max_reads_for_pbar(self):
         max_reads = 0
         for bf in self.read_group_bams:
-            if not os.path.isfile(self.outputs[bf]):
+            if not os.path.isfile(self.spat_outputs[bf]):
                 self.index_bam_file(bf)
                 idxstats = pysam.idxstats(bf).split('\n')
                 num_reads = sum([int(chr.split("\t")[2]) + int(chr.split("\t")[3]) for chr in idxstats[:-1]])
@@ -72,22 +76,22 @@ class BAMSplitter:
                     max_reads = num_reads
                     self.max_bam = bf
             else:
-                del self.outputs[bf]
+                del self.spat_outputs_to_process[bf]
         return max_reads        
     
     def pileup_soft_clipped_reads(self):
         if not os.path.isfile(cached("forward_unmapped.json")) or not os.path.isfile(cached("reverse_unmapped.json")):        
             max_reads = self._get_max_reads_for_pbar()
-            if self.outputs and max_reads > 0:
+            if self.spat_outputs_to_process and max_reads > 0:
                 with tqdm(total=max_reads,
                         desc=f'{"INFO": <8} Iterating over reads to determine SPAT pileups',
                         bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]') as self.pbar:
-                    multiprocess_over_dict(self._count_unmapped_pileups, self.outputs)
+                    multiprocess_over_dict(self._count_unmapped_pileups, self.spat_outputs_to_process)
             
             logging.info('Merging SPAT outputs.')
             for strand in ["forward", "reverse"]:
                 strand_output = {}
-                for output in self.full_outputs.values():
+                for output in self.spat_outputs.values():
                     if strand in os.path.basename(output):
                         with open(output, 'r') as f:
                             strand_output = sum_nested_dicts(strand_output, json.load(f))
@@ -108,6 +112,19 @@ class BAMSplitter:
                     
         with open(output_file, "w") as f:
             json.dump(unmapped, f)
+            
+    def find_zero_coverage_intervals(self):
+        if not os.path.isfile(cached("forward_coverage_gaps.bed")) or not os.path.isfile(cached("reverse_coverage_gaps.bed")):
+            logging.info('Filtering intervals with zero coverage.')
+            multiprocess_over_dict(self._find_zero_coverage_intervals, self.gap_outputs_to_process)
+        else:
+            logging.info("Using cached zero coverage intervals.")
+    
+    def _find_zero_coverage_intervals(self, bam_file, output_file, min_cov=1):
+        bed_tool = pybedtools.example_bedtool(bam_file)
+        bed = bed_tool.genome_coverage(bga = True, split=True)
+        gaps = bed.filter(lambda x: float(x.name) < min_cov ).merge()
+        gaps.saveas(cached(output_file))
 
 
 async def create_db(gff_in):

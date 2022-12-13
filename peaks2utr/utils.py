@@ -52,7 +52,7 @@ def multiprocess_over_dict(f, d):
     for job in jobs:
         job.join()
         if job.exitcode != 0:
-            raise EXCEPTIONS_MAP.get(function.__name__, Exception)
+            raise EXCEPTIONS_MAP.get(f.__name__, Exception)
 
 def format_stats_line(msg, total, numerator=None):
     """

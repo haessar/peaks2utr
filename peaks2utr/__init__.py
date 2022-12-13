@@ -98,6 +98,7 @@ async def _main():
         if not args.skip_soft_clip:
             bs.split_read_groups()
             bs.pileup_soft_clipped_reads()
+        bs.find_zero_coverage_intervals()
 
         db, _, _ = await asyncio.gather(
             create_db(args.GFF_IN),
