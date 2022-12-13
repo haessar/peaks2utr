@@ -6,6 +6,7 @@ import math
 import multiprocessing
 import os
 import os.path
+import pkg_resources
 import shutil
 import sys
 
@@ -41,6 +42,7 @@ def prepare_argparser():
     parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
     parser.add_argument('-o', '--output', help="output filename.")
     parser.add_argument('--keep-cache', action="store_true", help="Keep cached files on run completion.")
+    parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
     return parser
 
 
