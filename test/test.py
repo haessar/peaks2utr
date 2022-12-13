@@ -23,8 +23,10 @@ class TestUTRAnnotation(unittest.TestCase):
                     queue = Queue()
                     peak.strand = strand
                     with mock.patch('peaks2utr.annotations.cached') as cached_mock:
-                        cached_mock.return_value = "test/unmapped.json"
-                        annotate_utr_for_peak(self.db, queue, peak, max_distance=max_distance)
+                        with mock.patch('peaks2utr.annotations.pybedtools') as pybt_mock:
+                            cached_mock.return_value = "test/unmapped.json"
+                            pybt_mock.return_value = mock.MagicMock()
+                            annotate_utr_for_peak(self.db, queue, peak, max_distance=max_distance)
                     if expected_annotations[peak.name] is None:
                         self.assertIsNone(queue.get())                        
                     elif expected_annotations[peak.name] is NoNearbyFeatures:
