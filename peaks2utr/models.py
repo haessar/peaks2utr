@@ -40,6 +40,9 @@ class UTR(RangeMixin):
         self.end = end
         self.feature = None
 
+    def __str__(self):
+        return str(self.feature) if self.feature else super().__str__()        
+
     def __repr__(self):
         return "<%s: (%s, %s)>" % (self.__class__.__name__, self.start, self.end)
 
