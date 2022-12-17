@@ -34,42 +34,43 @@ def merge_annotations(db, annotations):
 
     db = sqlite3.connect(db, check_same_thread=False)
     db = gffutils.FeatureDB(db)
-    for gene in db.all_features(featuretype="gene"):
+    for gene in db.all_features(featuretype=["gene", "protein_coding_gene"]):
         if gene.id not in annotations:
             features = {"gene": gene}
-            features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(gene)))})
+            features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(gene)))
+                             if f.id != gene.id})
             annotations[gene.id] = features
 
 
-def gt_gff3_sort(annotations, new_gff_fn, force=False):
+def gt_gff3_sort(annotations, new_gff_fn, force=False, gtf=False):
     """
     Use genometools (gt) binary to sort and tidy tmp file into new combined output gff3 file.
     """
     log_fn = "gt_gff3.log"
     with open(cached(TMP_GFF_FN), 'w') as fout:
         fout.writelines(annotations)
-
-    command = "gt gff3 -sort -retainids -tidy -o {} ".format(new_gff_fn)
-    if force:
-        command += "-force "
-    with open(os.path.join(LOG_DIR, log_fn), 'w') as flog:
-        try:
-            output = subprocess.check_output(
-                command + cached(TMP_GFF_FN),
-                universal_newlines=True,
-                stderr=subprocess.STDOUT,
-                shell=True
-            )
-        except subprocess.CalledProcessError as e:
-            flog.write(e.output)
-            if e.returncode == 127:
-                logging.warning("Genometools binary can't be called. Please ensure it is installed.")
-        except MemoryError:
-            logging.warning("Process required too much memory. Aborting.")
-        else:
-            flog.write(output)
-            if os.path.exists(new_gff_fn):
-                logging.info("Successfully formatted GFF3 output file %s using genometools." % new_gff_fn)
-                return
-    logging.warning("Some issues were encountered when processing output file. Check %s." % log_fn)
+    if not gtf:
+        command = "gt gff3 -sort -retainids -tidy -o {} ".format(new_gff_fn)
+        if force:
+            command += "-force "
+        with open(os.path.join(LOG_DIR, log_fn), 'w') as flog:
+            try:
+                output = subprocess.check_output(
+                    command + cached(TMP_GFF_FN),
+                    universal_newlines=True,
+                    stderr=subprocess.STDOUT,
+                    shell=True
+                )
+            except subprocess.CalledProcessError as e:
+                flog.write(e.output)
+                if e.returncode == 127:
+                    logging.warning("Genometools binary can't be called. Please ensure it is installed.")
+            except MemoryError:
+                logging.warning("Process required too much memory. Aborting.")
+            else:
+                flog.write(output)
+                if os.path.exists(new_gff_fn):
+                    logging.info("Successfully formatted GFF3 output file %s using genometools." % new_gff_fn)
+                    return
+        logging.warning("Some issues were encountered when processing output file. Check %s." % log_fn)
     shutil.copy(cached(TMP_GFF_FN), new_gff_fn)

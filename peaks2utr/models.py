@@ -3,7 +3,7 @@ import re
 
 import gffutils
 
-from .constants import AnnotationColour, STRAND_CIGAR_SOFT_CLIP_REGEX
+from .constants import AnnotationColour, STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GTF_DIALECT
 
 
 class RangeMixin(ABC):
@@ -64,26 +64,34 @@ class UTR(RangeMixin):
         else:
             return "utr_" + gene.id + ":mRNA_1"
 
-    def generate_feature(self, gene, db, colour=AnnotationColour.Extended):
+    def generate_feature(self, gene, transcript, db, colour=AnnotationColour.Extended, gtf=False):
         """
         Generate three_prime_UTR feature in gff3 format.
         """
-        attrs = dict(gene.attributes)
-        attrs.pop('ID', None)
-        attrs["ID"] = [self._get_id(gene, db)]
-        attrs['Parent'] = [gene.id]
+        attrs = dict(transcript.attributes)
         attrs['colour'] = [colour]
-        self.feature = gffutils.Feature(
-            seqid=gene.chrom,
-            source=__package__,
-            featuretype="three_prime_UTR",
-            start=self.start,
-            end=self.end,
-            score='.',
-            strand=gene.strand,
-            frame='.',
-            attributes=attrs
-        )
+        kwargs = {
+            "seqid": gene.chrom,
+            "source": __package__,
+            "featuretype": "three_prime_UTR",
+            "start": self.start,
+            "end": self.end,
+            "score": '.',
+            "strand": gene.strand,
+            "frame": '.',
+        }
+        if gtf:
+            kwargs.update({"dialect": GFFUTILS_GTF_DIALECT})
+            if "gene_id" not in attrs or "transcript_id" not in attrs:
+                attrs["gene_id"] = [gene.id]
+                attrs["transcript_id"] = [transcript.id]
+        else:
+            attrs.pop('ID', None)
+            attrs["ID"] = [self._get_id(gene, db)]
+            attrs['Parent'] = [gene.id]
+        kwargs.update({"attributes": attrs})
+
+        self.feature = gffutils.Feature(**kwargs)
 
     def is_valid(self):
         return self.end > self.start

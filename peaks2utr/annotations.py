@@ -34,15 +34,15 @@ class Annotations(collections.UserDict):
             yield '\n'.join([str(f) for _, f in features.items()]) + '\n'
 
 
-def set_gene_range(gene, strand, five_prime_ext=0):
+def set_feature_range(feature, strand, five_prime_ext=0):
     """
-    Assign a range to gene taking into account assumed 5' extension.
+    Assign a range to feature taking into account assumed 5' extension.
     """
     if strand == "+":
-        gene.start -= five_prime_ext
+        feature.start -= five_prime_ext
     else:
-        gene.end += five_prime_ext
-    gene.range = range(gene.start, gene.end)
+        feature.end += five_prime_ext
+    feature.range = range(feature.start, feature.end)
 
 
 def _iter_peaks(db, peaks_batch, queue, truncation_points, coverage_gaps, args):
@@ -56,7 +56,8 @@ def _iter_peaks(db, peaks_batch, queue, truncation_points, coverage_gaps, args):
             args.max_distance,
             args.override_utr,
             args.extend_utr,
-            args.five_prime_ext)
+            args.five_prime_ext,
+            args.gtf)
 
 
 def batch_annotate_strand(db, peaks_batch, queue, args):
@@ -75,7 +76,7 @@ def batch_annotate_strand(db, peaks_batch, queue, args):
 
 
 def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max_distance, override_utr=False,
-                          extend_utr=False, five_prime_ext=0):
+                          extend_utr=False, five_prime_ext=0, gtf=False):
     """
     Find genes in region of given peak and apply criteria to determine if 3' UTR exists for each.
     If so, add to multiprocessing Queue.
@@ -86,21 +87,28 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
         start=peak.start - max_distance,
         end=peak.end + max_distance,
         strand=peak.strand,
-        featuretype=['gene', 'transcript', 'protein_coding_gene'])
+        featuretype=["gene", "protein_coding_gene"])
     )
     genes = sorted(genes, key=lambda x: x.start, reverse=False if peak.strand == "+" else True)
     if genes:
         for idx, gene in enumerate(genes):
+            transcripts = db.children(
+                gene,
+                featuretype='transcript' if gtf else 'mRNA',
+                order_by="end" if peak.strand == "+" else "start",
+                reverse=True if peak.strand == "+" else False
+            )
+            # Take outermost transcript
+            transcript = next(transcripts)
             try:
-                gene = copy.deepcopy(genes[idx])
-                set_gene_range(gene, peak.strand)
-                criteria.assert_whether_utr_already_annotated(peak, gene, db, override_utr, extend_utr)
-                criteria.assert_not_a_subset(peak, gene)
+                set_feature_range(transcript, peak.strand)
+                criteria.assert_whether_utr_already_annotated(peak, transcript, db, override_utr, extend_utr)
+                criteria.assert_not_a_subset(peak, transcript)
                 utr = UTR(start=peak.start, end=peak.end)
-                criteria.assert_3_prime_end_and_truncate(peak, gene, utr)
+                criteria.assert_3_prime_end_and_truncate(peak, transcript, utr)
                 if len(genes) > idx + 1:
                     next_gene = copy.deepcopy(genes[idx + 1])
-                    set_gene_range(next_gene, peak.strand, five_prime_ext)
+                    set_feature_range(next_gene, peak.strand, five_prime_ext)
                     criteria.belongs_to_next_gene(peak, next_gene)
                     criteria.truncate_5_prime_end(peak, next_gene, utr)
             except criteria.CriteriaFailure as e:
@@ -116,7 +124,7 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                     except ValueError:
                         pass
                     else:
-                        utr.end = max(gene.end, gap_edge)
+                        utr.end = max(transcript.end, gap_edge)
                         colour = AnnotationColour.TruncatedZeroCoverage
                 else:
                     gaps = coverage_gaps.filter(peak.chr, utr.start)
@@ -125,7 +133,7 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                     except ValueError:
                         pass
                     else:
-                        utr.start = min(gene.start, gap_edge)
+                        utr.start = min(transcript.start, gap_edge)
                         colour = AnnotationColour.TruncatedZeroCoverage
                 if intersect:
                     if peak.strand == "+":
@@ -135,13 +143,15 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                     colour = AnnotationColour.ExtendedWithSPAT
                 if utr.is_valid():
                     logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
-                    utr.generate_feature(gene, db, colour)
+                    utr.generate_feature(gene, transcript, db, colour, gtf)
+                    features = {"gene": gene, "transcript": transcript}
+                    features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(transcript)))
+                                     if f.id != transcript.id and f.id != gene.id})
+                    features.update({"utr": utr})
                     if peak.strand == "+":
-                        gene.end = utr.end
+                        gene.end = transcript.end = utr.end
                     else:
-                        gene.start = utr.start
-                    features = {"gene": gene, "utr": utr}
-                    features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(gene)))})
+                        gene.start = transcript.start = utr.start
                     queue.put({gene.id: features})
                     utr_found = True
     else:
