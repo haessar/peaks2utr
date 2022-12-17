@@ -41,6 +41,7 @@ def prepare_argparser():
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
     parser.add_argument('-o', '--output', help="output filename.")
+    parser.add_argument('--gtf', action="store_true", help="output in GTF format (rather than default GFF3).")
     parser.add_argument('--keep-cache', action="store_true", help="Keep cached files on run completion.")
     parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
     return parser
@@ -84,7 +85,10 @@ async def _main():
         args = argparser.parse_args()
 
         gff_basename = os.path.basename(os.path.splitext(args.GFF_IN)[0])
-        new_gff_fn = gff_basename + ".new.gff" if not args.output else args.output
+        if not args.output:
+            new_gff_fn = gff_basename + ".new" + ".gtf" if args.gtf else ".gff3"
+        else:
+            new_gff_fn = args.output
 
         if os.path.exists(new_gff_fn) and not args.force:
             logging.error("%s already exists. Re-run with -f flag to force overwrite of output files. Aborting." % new_gff_fn)

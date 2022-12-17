@@ -17,6 +17,19 @@ STRAND_PYSAM_ARGS = {
     'reverse': ["-f", "16"],
 }
 
+GFFUTILS_GTF_DIALECT = {
+    'leading semicolon': False,
+    'trailing semicolon': True,
+    'quoted GFF2 values': True,
+    'field separator': '; ',
+    'keyval separator': ' ',
+    'multival separator': ',',                
+    'fmt': 'gtf',
+    'repeated keys': False,
+    'order': ['gene_id', 'transcript_id', 'ID', 'Name'],
+}
+
+
 CACHE_DIR = os.path.join(os.getcwd(), '.cache')
 LOG_DIR = os.path.join(os.getcwd(), '.log')
 
