@@ -29,6 +29,17 @@ GFFUTILS_GTF_DIALECT = {
     'order': ['gene_id', 'transcript_id', 'ID', 'Name'],
 }
 
+GFFUTILS_GFF_DIALECT = {
+    'leading semicolon': False,
+    'trailing semicolon': False,
+    'quoted GFF2 values': False,
+    'field separator': ';',
+    'keyval separator': '=',
+    'multival separator': ',',
+    'fmt': 'gff3',
+    'repeated keys': False,
+    'order': ['ID', 'Name', 'gene_id', 'transcript_id']
+}
 
 CACHE_DIR = os.path.join(os.getcwd(), '.cache')
 LOG_DIR = os.path.join(os.getcwd(), '.log')

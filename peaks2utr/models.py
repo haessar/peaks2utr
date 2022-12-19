@@ -3,7 +3,7 @@ import re
 
 import gffutils
 
-from .constants import STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GTF_DIALECT
+from .constants import STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GFF_DIALECT, GFFUTILS_GTF_DIALECT
 
 
 class RangeMixin(ABC):
@@ -33,6 +33,8 @@ class Peak(RangeMixin):
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, str(self.__dict__))
 
+class Feature(gffutils.Feature, RangeMixin):
+    pass
 
 class UTR(RangeMixin):
     def __init__(self, start, end):
@@ -49,23 +51,21 @@ class UTR(RangeMixin):
     def __eq__(self, other):
         return self.range == other.range
 
-    def _get_id(self, gene, db):
-        existing_utrs = list(db.children(gene, featuretype=['three_prime_UTR', 'three_prime_utr'])) + list(db.children(gene, featuretype=['five_prime_UTR', 'five_prime_utr']))
+    def _create_id(self, transcript, db):
+        existing_utrs = list(db.children(transcript, featuretype=['three_prime_UTR', 'three_prime_utr'])) + list(db.children(transcript, featuretype=['five_prime_UTR', 'five_prime_utr']))
         if existing_utrs:
             max_utr = sorted([utr.id for utr in existing_utrs], reverse=True)[0]
             max_idx = int(max_utr[-1])
             max_utr_basename = max_utr[:-1]
             return max_utr_basename + str(max_idx + 1)
         else:
-            return "utr_" + gene.id + ":mRNA_1"
+            return "utr_" + transcript.id + "_1"
 
-    def generate_feature(self, gene, transcript, db, colour="3", gtf=False):
+    def generate_feature(self, gene, transcript, db, colour="3", gtf_in=False, gtf_out=False):
         """
         Generate three_prime_UTR feature in gff3 format.
         """
-        attrs = dict(transcript.attributes)
-        attrs['colour'] = [colour]
-        kwargs = {
+        d = {
             "seqid": gene.chrom,
             "source": __package__,
             "featuretype": "three_prime_UTR",
@@ -74,19 +74,20 @@ class UTR(RangeMixin):
             "score": '.',
             "strand": gene.strand,
             "frame": '.',
+            "dialect": GFFUTILS_GTF_DIALECT if gtf_in else GFFUTILS_GFF_DIALECT,
         }
-        if gtf:
-            kwargs.update({"dialect": GFFUTILS_GTF_DIALECT})
-            if "gene_id" not in attrs or "transcript_id" not in attrs:
-                attrs["gene_id"] = [gene.id]
-                attrs["transcript_id"] = [transcript.id]
+        attrs = {}
+        id = self._create_id(transcript, db)
+        if gtf_out:            
+            attrs["gene_id"] = [gene.id]
+            attrs["transcript_id"] = [transcript.id]
         else:
-            attrs.pop('ID', None)
-            attrs["ID"] = [self._get_id(gene, db)]
-            attrs['Parent'] = [gene.id]
-        kwargs.update({"attributes": attrs})
+            attrs["ID"] = [id]
+            attrs["Parent"] = [transcript.id]
+        attrs.update({'colour': [colour]})
+        d.update({"attributes": attrs})
             
-        self.feature = gffutils.Feature(**kwargs)
+        self.feature = Feature(id=id, **d)
 
     def is_valid(self):
         return self.end > self.start

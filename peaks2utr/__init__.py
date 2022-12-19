@@ -2,8 +2,6 @@ import argparse
 import asyncio
 import csv
 import logging
-import math
-import multiprocessing
 import os
 import os.path
 import pkg_resources
@@ -11,11 +9,10 @@ import shutil
 import sys
 
 import psutil
-from tqdm import tqdm
 
 from . import constants, models
-from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
-from .utils import cached, iter_batches, yield_from_process, limit_memory
+from .annotations import Annotations, NoNearbyFeatures
+from .utils import cached, yield_from_process, limit_memory
 from .preprocess import BAMSplitter, call_peaks, create_db
 from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
 
@@ -41,7 +38,7 @@ def prepare_argparser():
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
     parser.add_argument('-o', '--output', help="output filename.")
-    parser.add_argument('--gtf', action="store_true", help="output in GTF format (rather than default GFF3).")
+    parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3).")
     parser.add_argument('--keep-cache', action="store_true", help="Keep cached files on run completion.")
     parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
     return parser
@@ -84,9 +81,12 @@ async def _main():
         argparser = prepare_argparser()
         args = argparser.parse_args()
 
-        gff_basename = os.path.basename(os.path.splitext(args.GFF_IN)[0])
+        gff_base, gff_ext = os.path.splitext(args.GFF_IN)
+        gff_basename = os.path.basename(gff_base)
+        args.gtf_in = True if "gtf" in gff_ext else False
         if not args.output:
-            new_gff_fn = gff_basename + ".new" + ".gtf" if args.gtf else ".gff3"
+            new_gff_fn = gff_basename + ".new"
+            new_gff_fn += ".gtf" if args.gtf_out else ".gff3"
         else:
             new_gff_fn = args.output
 
@@ -118,19 +118,11 @@ async def _main():
                 for peak in peaks:
                     peak.strand = constants.STRAND_MAP.get(strand)
                 return peaks
-                
         peaks = parse_peaks('forward') + parse_peaks('reverse')
-        total_peaks = len(peaks)
-        queue = multiprocessing.Queue()
-        
-        processes = [batch_annotate_strand(db, batch, queue, args) for batch in iter_batches(peaks, math.ceil(total_peaks/args.processors))]
-        for p in processes:
-            p.start()
 
-        annotations = Annotations()
-        with tqdm(total=total_peaks, desc=f'{"INFO": <8} Iterating over peaks to annotate 3\' UTRs.') as pbar:            
-            for p in processes:
-                for result in yield_from_process(queue, p, pbar):
+        with Annotations(db, peaks, args) as annotations:
+            for p in annotations.processes:
+                for result in yield_from_process(annotations.queue, p, annotations.pbar):
                     if result:
                         if result is NoNearbyFeatures:
                             annotations.no_features_counter += 1
@@ -138,7 +130,7 @@ async def _main():
                             annotations.update(result)
 
         merge_and_gt_gff3_sort(db, annotations, new_gff_fn, args)
-        write_summary_stats(annotations, total_peaks)
+        write_summary_stats(annotations)
 
         logging.info("%s finished successfully." % __package__)
         await asyncio.sleep(1)

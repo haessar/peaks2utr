@@ -11,7 +11,8 @@ from .constants import LOG_DIR, TMP_GFF_FN
 from .utils import cached, format_stats_line, format_stats_line
 
 
-def write_summary_stats(annotations, total_peaks):
+def write_summary_stats(annotations):
+    total_peaks = annotations.total_peaks
     with open('summary_stats.txt', 'w') as fstats:
         logging.info("Writing summary statistics file.")
         fstats.write(format_stats_line("Total peaks", total_peaks))
@@ -45,7 +46,7 @@ def merge_and_gt_gff3_sort(db, annotations, new_gff_fn, args):
     with open(cached(TMP_GFF_FN), 'w') as fout:
         fout.writelines(annotations)
     
-    if not args.gtf:
+    if not args.gtf_out:
         command = "gt gff3 -sort -retainids -tidy -o {} ".format(new_gff_fn)
         if args.force:
             command += "-force "
