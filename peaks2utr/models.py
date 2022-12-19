@@ -3,7 +3,7 @@ import re
 
 import gffutils
 
-from .constants import AnnotationColour, STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GFF_DIALECT, GFFUTILS_GTF_DIALECT
+from .constants import AnnotationColour, FeatureTypes, STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GFF_DIALECT, GFFUTILS_GTF_DIALECT
 
 
 class RangeMixin(ABC):
@@ -56,8 +56,8 @@ class UTR(RangeMixin):
         return self.range == other.range
 
     def _create_id(self, transcript, db):
-        existing_utrs = list(db.children(transcript, featuretype=['three_prime_UTR', 'three_prime_utr'])) + \
-                        list(db.children(transcript, featuretype=['five_prime_UTR', 'five_prime_utr']))
+        existing_utrs = list(db.children(transcript, featuretype=FeatureTypes.ThreePrimeUTR)) + \
+                        list(db.children(transcript, featuretype=FeatureTypes.FivePrimeUTR))
         if existing_utrs:
             max_utr = sorted([utr.id for utr in existing_utrs], reverse=True)[0]
             max_idx = int(max_utr[-1])
@@ -73,7 +73,7 @@ class UTR(RangeMixin):
         d = {
             "seqid": gene.chrom,
             "source": __package__,
-            "featuretype": "three_prime_UTR",
+            "featuretype": FeatureTypes.ThreePrimeUTR[0],
             "start": self.start,
             "end": self.end,
             "score": '.',

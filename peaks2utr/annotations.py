@@ -68,12 +68,12 @@ class Annotations(collections.UserDict):
             if not self.args.gtf_out and not (attrs.get('ID') and attrs.get('Parent')):
                 if not attrs.get('ID'):
                     attrs['ID'] = [feature.id]
-                if not attrs.get('Parent') and feature.featuretype not in ['gene', 'protein_coding_gene']:
-                    attrs['Parent'] = attrs['gene_id'] if feature.featuretype == 'transcript' else attrs['transcript_id']
+                if not attrs.get('Parent') and feature.featuretype not in constants.FeatureTypes.Gene:
+                    attrs['Parent'] = attrs['gene_id'] if feature.featuretype in constants.FeatureTypes.GtfTranscript else attrs['transcript_id']
             # GFF3 in, GTF out
             elif self.args.gtf_out and not (attrs.get('gene_id') and attrs.get('transcript_id')):
-                if feature.featuretype not in ['gene', 'protein_coding_gene']:
-                    if feature.featuretype == 'mRNA':
+                if feature.featuretype not in constants.FeatureTypes.Gene:
+                    if feature.featuretype in constants.FeatureTypes.GffTranscript:
                         attrs['gene_id'] = attrs['Parent']
                         attrs['transcript_id'] = [feature.id]
                     else:
@@ -113,14 +113,14 @@ class Annotations(collections.UserDict):
             start=peak.start - self.args.max_distance,
             end=peak.end + self.args.max_distance,
             strand=peak.strand,
-            featuretype=["gene", "protein_coding_gene"])
+            featuretype=constants.FeatureTypes.Gene)
         )
         genes = sorted(genes, key=lambda x: x.start, reverse=False if peak.strand == "+" else True)
         if genes:
             for idx, gene in enumerate(genes):
                 transcripts = db.children(
                     gene,
-                    featuretype='transcript' if self.args.gtf_in else 'mRNA',
+                    featuretype=constants.FeatureTypes.GtfTranscript if self.args.gtf_in else constants.FeatureTypes.GffTranscript,
                     order_by="end" if peak.strand == "+" else "start",
                     reverse=True if peak.strand == "+" else False
                 )

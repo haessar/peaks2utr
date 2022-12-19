@@ -1,5 +1,6 @@
 import logging
 
+from .constants import FeatureTypes
 from .utils import Counter
 
 
@@ -28,7 +29,7 @@ def assert_whether_utr_already_annotated(peak, transcript, db, override_utr, ext
     If the canonical annotation for this transcript already contains a 'three_prime_UTR' annotation, we either want to
     leave this as is, extend it or override it.
     """
-    existing_utrs = list(db.children(transcript, featuretype=['three_prime_UTR', 'three_prime_utr']))
+    existing_utrs = list(db.children(transcript, featuretype=FeatureTypes.ThreePrimeUTR))
     if existing_utrs:
         if len(existing_utrs) > 1:
             logging.debug("Multiple existing 3' UTRs found for transcript %s" % transcript.id)

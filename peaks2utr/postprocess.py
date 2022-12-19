@@ -7,7 +7,7 @@ import sqlite3
 import gffutils
 
 from . import criteria
-from .constants import LOG_DIR, TMP_GFF_FN
+from .constants import FeatureTypes, LOG_DIR, TMP_GFF_FN
 from .utils import cached, format_stats_line
 
 
@@ -35,7 +35,7 @@ def merge_annotations(db, annotations):
 
     db = sqlite3.connect(db, check_same_thread=False)
     db = gffutils.FeatureDB(db)
-    for gene in db.all_features(featuretype=["gene", "protein_coding_gene"]):
+    for gene in db.all_features(featuretype=FeatureTypes.Gene):
         if gene.id not in annotations:
             features = {"gene": gene}
             features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(gene)))

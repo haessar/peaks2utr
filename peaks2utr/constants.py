@@ -13,6 +13,14 @@ class AnnotationColour:
     TruncatedZeroCoverage = artemis_colour_map["magenta"]
 
 
+class FeatureTypes:
+    Gene = ['gene', 'protein_coding_gene']
+    FivePrimeUTR = ['five_prime_UTR', 'five_prime_utr']
+    ThreePrimeUTR = ['three_prime_UTR', 'three_prime_utr']
+    GtfTranscript = ['transcript']
+    GffTranscript = ['mRNA']
+
+
 STRAND_MAP = {
     'forward': '+',
     'reverse': '-',
