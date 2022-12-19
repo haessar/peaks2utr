@@ -11,7 +11,8 @@ from .constants import LOG_DIR, TMP_GFF_FN
 from .utils import cached, format_stats_line
 
 
-def write_summary_stats(annotations, total_peaks):
+def write_summary_stats(annotations):
+    total_peaks = annotations.total_peaks
     with open('summary_stats.txt', 'w') as fstats:
         logging.info("Writing summary statistics file.")
         fstats.write(format_stats_line("Total peaks", total_peaks))
@@ -42,14 +43,14 @@ def merge_annotations(db, annotations):
             annotations[gene.id] = features
 
 
-def gt_gff3_sort(annotations, new_gff_fn, force=False, gtf=False):
+def gt_gff3_sort(annotations, new_gff_fn, force=False, gtf_out=False):
     """
     Use genometools (gt) binary to sort and tidy tmp file into new combined output gff3 file.
     """
     log_fn = "gt_gff3.log"
     with open(cached(TMP_GFF_FN), 'w') as fout:
         fout.writelines(annotations)
-    if not gtf:
+    if not gtf_out:
         command = "gt gff3 -sort -retainids -tidy -o {} ".format(new_gff_fn)
         if force:
             command += "-force "

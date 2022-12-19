@@ -4,13 +4,13 @@ import os.path
 
 class AnnotationColour:
     artemis_colour_map = {
-        "red": "4",
+        "magenta": "6",
         "green": "3",
-        "blue": "6",
+        "blue": "4",
     }
     Extended = artemis_colour_map["green"]
     ExtendedWithSPAT = artemis_colour_map["blue"]
-    TruncatedZeroCoverage = artemis_colour_map["red"]
+    TruncatedZeroCoverage = artemis_colour_map["magenta"]
 
 
 STRAND_MAP = {
@@ -34,12 +34,23 @@ GFFUTILS_GTF_DIALECT = {
     'quoted GFF2 values': True,
     'field separator': '; ',
     'keyval separator': ' ',
-    'multival separator': ',',                
+    'multival separator': ',',
     'fmt': 'gtf',
     'repeated keys': False,
     'order': ['gene_id', 'transcript_id', 'ID', 'Name'],
 }
 
+GFFUTILS_GFF_DIALECT = {
+    'leading semicolon': False,
+    'trailing semicolon': False,
+    'quoted GFF2 values': False,
+    'field separator': ';',
+    'keyval separator': '=',
+    'multival separator': ',',
+    'fmt': 'gff3',
+    'repeated keys': False,
+    'order': ['ID', 'Name', 'gene_id', 'transcript_id']
+}
 
 CACHE_DIR = os.path.join(os.getcwd(), '.cache')
 LOG_DIR = os.path.join(os.getcwd(), '.log')

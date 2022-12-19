@@ -3,6 +3,8 @@ import os.path
 from queue import Empty
 import resource
 
+import gffutils
+
 from .constants import CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
 
@@ -131,3 +133,23 @@ def sum_nested_dicts(d1, d2):
     result = d2.copy()
     result.update({k: sum(v, d2.get(k)) for k, v in d1.items()})
     return result
+
+
+def feature_from_line(line, dialect_in, dialect_out):
+    """
+    Given a line from a GFF file, return a Feature object.
+    
+    This adapts gffutils.feature.feature_from_line to allow an output dialect to
+    be specified, in addition to the dialect used for parsing the feature string.
+    """
+    fields = line.rstrip('\n\r').split('\t')
+    try:
+        attr_string = fields[8]
+    except IndexError:
+        attr_string = ""
+    attrs, _ = gffutils.parser._split_keyvals(attr_string, dialect=dialect_in)
+    d = dict(list(zip(gffutils.constants._gffkeys, fields)))
+    d['attributes'] = attrs
+    d['extra'] = fields[9:]
+    d['keep_order'] = True
+    return gffutils.Feature(dialect=dialect_out, **d)
