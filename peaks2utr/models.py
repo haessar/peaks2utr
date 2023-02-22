@@ -17,7 +17,7 @@ class RangeMixin(ABC):
 
 class Peak(RangeMixin):
     """
-    MACS2 peak in BED 6+3 format.
+    MACS3 peak in BED 6+3 format.
     """
     def __init__(self, *args):
         self.chr = str(args[0])
