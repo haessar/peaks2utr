@@ -1,0 +1,39 @@
+{% set version = "0.4" %}
+
+package:
+  name: peaks2utr
+  version: {{ version }}
+
+source:
+  path: .
+  # url:
+  # sha256:
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install --no-deps --ignore-installed .
+  entry_points:
+    - peaks2utr = peaks2utr.__main__:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - python>=3.8, <3.10
+    - pybedtools
+    - gffutils==0.10.1
+    - pysam
+    - MACS3
+    - numpy>=1.21.4
+    - tqdm
+    - asgiref
+    - psutil
+
+# about:
+#   home:
+#   license: 
+#   summary:
+#   description:

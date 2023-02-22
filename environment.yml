@@ -1,0 +1,16 @@
+name: peaks2utr
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.8, <3.10
+  - pybedtools
+  - pip
+  - pip:
+    - gffutils==0.10.1
+    - pysam
+    - MACS3
+    - numpy>=1.21.4
+    - tqdm
+    - asgiref
+    - psutil
