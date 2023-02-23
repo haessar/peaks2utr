@@ -5,32 +5,38 @@ package:
   version: {{ version }}
 
 source:
-  path: .
+  path: ..
   # url:
   # sha256:
 
 build:
   noarch: python
   number: 0
-  script: python -m pip install --no-deps --ignore-installed .
+  #script: python -m pip install --no-deps --ignore-installed .
   entry_points:
     - peaks2utr = peaks2utr.__main__:main
+  preserve_egg_dir: True
 
 requirements:
   host:
-    - python
+    - python >=3.8,<3.10
     - pip
-  run:
-    - python
-    - python>=3.8, <3.10
+    - setuptools
+    - build
+    - wheel
     - pybedtools
-    - gffutils==0.10.1
+    - six
+  run:
+    - python >=3.8,<3.10
+    - pybedtools
+    - gffutils 0.10.1
     - pysam
-    - MACS3
-    - numpy>=1.21.4
+    #- MACS3
+    - numpy >=1.21.4
     - tqdm
     - asgiref
     - psutil
+    - six
 
 # about:
 #   home:
