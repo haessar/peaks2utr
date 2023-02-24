@@ -11,8 +11,20 @@ Alternatively, to install from source:
 ```
 git clone https://github.com/haessar/peaks2utr.git
 cd peaks2utr
-python -m build
-pip install dist/*.tar.gz
+python3 -m build
+python3 -m pip install dist/*.tar.gz
+```
+### Dependencies
+Installation instructions assume a Debian / Ubuntu system with root privileges. Follow the links for instructions for other systems.
+#### Required
+[bedtools](https://bedtools.readthedocs.io/en/latest/content/installation.html)
+```
+apt-get install bedtools
+```
+#### Optional
+[GenomeTools](https://github.com/genometools/genometools#building-and-installation) (for post-processing of output gff3)
+```
+apt-get install genometools
 ```
 ## Quick start
 Download demo reference annotations <a href="https://github.com/haessar/peaks2utr/raw/master/demo/Tb927_01_v5.1.gff" target="_blank" >Tb927_01_v5.1.gff</a> and bam file <a href="https://github.com/haessar/peaks2utr/raw/master/demo/Tb927_01_v5.1.slice.bam" target="_blank" >Tb927_01_v5.1.slice.bam</a> and run
