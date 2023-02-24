@@ -1,2 +1,3 @@
+# Exclude Jupyter Notebooks and html files from GitHub Language stats, as they tend to dominate.
 *.ipynb linguist-vendored
 *.html linguist-vendored
