@@ -143,19 +143,19 @@ async def create_db(gff_in):
 
 async def call_peaks(bam_basename, strand):
     """
-    Call MACS2 asynchronously for stranded BAM file.
+    Call MACS3 asynchronously for stranded BAM file.
     """
     if not os.path.isfile(cached("%s_peaks.broadPeak" % strand)):
-        logging.info("Calling peaks for %s strand with MACS2." % strand)
+        logging.info("Calling peaks for %s strand with MACS3." % strand)
         process = await asyncio.create_subprocess_exec(
-            "macs2", "callpeak", "-t", cached(bam_basename + '.%s.bam' % strand), "-n", strand, "--nomodel", "--extsize", "200", "--broad", "--outdir", CACHE_DIR,
+            "macs3", "callpeak", "-t", cached(bam_basename + '.%s.bam' % strand), "-n", strand, "--nomodel", "--extsize", "200", "--broad", "--outdir", CACHE_DIR,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT
         )
         asyncio.create_task(consume_lines(process.stdout, os.path.join(LOG_DIR, "%s_macs2.log" % strand)))
         exit_code = await process.wait()
         if exit_code != 0:
-            logging.error("MACS2 returned an error.")
+            logging.error("MACS3 returned an error.")
             raise EXCEPTIONS_MAP.get("call_peaks", Exception)("Check %s_macs2.log." % strand)
         logging.info("Finished calling %s strand peaks." % strand)
     else:

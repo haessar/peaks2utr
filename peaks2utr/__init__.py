@@ -23,7 +23,7 @@ from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
 def prepare_argparser():
     parser = argparse.ArgumentParser(
         description="""
-        Use MACS2 to build forward and reverse peaks files for given .bam file.
+        Use MACS3 to build forward and reverse peaks files for given .bam file.
         Iterate peaks through set of criteria to determine UTR viability, before annotating in .gff file.
         """
     )
