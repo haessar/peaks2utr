@@ -96,7 +96,7 @@ def limit_memory(maxsize):
     Limit total available memory globally to maxsize bytes. Will throw MemoryError if breached.
     """
     _, hard = resource.getrlimit(resource.RLIMIT_AS)
-    resource.setrlimit(resource.RLIMIT_AS, (maxsize, hard))
+    resource.setrlimit(resource.RLIMIT_AS, (int(maxsize), hard))
 
 
 def filter_nested_dict(node, threshold):
