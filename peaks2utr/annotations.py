@@ -47,9 +47,9 @@ def set_gene_range(gene, strand, five_prime_ext=0):
     gene.range = range(gene.start, gene.end)
 
 
-def _iter_peaks(db, peaks_batch, queue, args):
+def _iter_peaks(db, peaks_batch, queue, spat_pileups, bedtools, args):
     for peak in peaks_batch:
-        annotate_utr_for_peak(db, queue, peak, args.max_distance, args.override_utr, args.extend_utr, args.five_prime_ext)         
+        annotate_utr_for_peak(db, queue, peak, spat_pileups.get(peak.strand), bedtools.get(peak.strand), args.max_distance, args.override_utr, args.extend_utr, args.five_prime_ext)
 
 
 def batch_annotate_strand(db, peaks_batch, queue, args):
@@ -57,12 +57,18 @@ def batch_annotate_strand(db, peaks_batch, queue, args):
     Create multiprocessing Process to handle batch of peaks. Connect to sqlite3 db for each batch to prevent
     serialization issues.
     """
+    spat_pileups = {}
+    bedtools = {}
+    for strand, symbol in constants.STRAND_MAP.items():
+        with open(cached(strand + "_unmapped.json"), "r") as f:
+            spat_pileups[symbol] = json.load(f) or {}
+        bedtools[symbol] = pybedtools.BedTool(cached(strand + "_coverage_gaps.bed"))#.filter(lambda x: x.chrom == peak.chr)
     db = sqlite3.connect(db, check_same_thread=False)
     db = gffutils.FeatureDB(db)
-    return multiprocessing.Process(target=_iter_peaks, args=(db, peaks_batch, queue, args))
+    return multiprocessing.Process(target=_iter_peaks, args=(db, peaks_batch, queue, spat_pileups, bedtools, args))
 
 
-def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, extend_utr=False, five_prime_ext=0):
+def annotate_utr_for_peak(db, queue, peak, spat_pileups, bedtool, max_distance, override_utr=False, extend_utr=False, five_prime_ext=0):
     """
     Find genes in region of given peak and apply criteria to determine if 3' UTR exists for each.
     If so, add to multiprocessing Queue.
@@ -75,11 +81,7 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
         strand=peak.strand,
         featuretype=['gene', 'transcript', 'protein_coding_gene'])
     )
-    for k, v in constants.STRAND_MAP.items():
-        if peak.strand == v:
-            with open(cached(k + "_unmapped.json"), "r") as f:
-                spat_pileups = json.load(f) or {}
-            bt = pybedtools.BedTool(cached(k + "_coverage_gaps.bed")).filter(lambda x: x.chrom == peak.chr)
+    bt = bedtool.filter(lambda x: x.chrom == peak.chr)
     genes = sorted(genes, key=lambda x: x.start, reverse=False if peak.strand == "+" else True)
     if genes:
         for idx, gene in enumerate(genes):
@@ -99,7 +101,7 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
                 logging.debug("%s - %s" % (type(e).__name__, e))
             else:
                 colour="3"
-                intersect = utr.range.intersection(map(int, sorted(spat_pileups[peak.chr], key=int))) if peak.chr in spat_pileups else None                
+                intersect = utr.range.intersection(map(int, sorted(spat_pileups[peak.chr], key=int))) if peak.chr in spat_pileups else None
                 if peak.strand == "+":
                     gaps = bt.filter(lambda x: x.start < utr.end < x.end)
                     try:
@@ -118,8 +120,8 @@ def annotate_utr_for_peak(db, queue, peak, max_distance, override_utr=False, ext
                     else:
                         utr.start = min(gene.start, gap_edge)
                         colour="6"
-                if intersect:                    
-                    if peak.strand == "+":                        
+                if intersect:
+                    if peak.strand == "+":
                         utr.end = max(intersect)
                     else:
                         utr.start = min(intersect)
