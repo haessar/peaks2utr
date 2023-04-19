@@ -223,8 +223,5 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 /.idea
 
-# Sqlite3 dbs
-*.db
-
 # results outputs
 results/*/output

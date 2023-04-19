@@ -1,17 +1,27 @@
 import csv
+import os
 from queue import Queue
+import sys
 import unittest
-from unittest import mock
 
 import gffutils
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from peaks2utr.annotations import Annotations, NoNearbyFeatures, annotate_utr_for_peak
-from peaks2utr.models import Peak, UTR
+from peaks2utr.models import Peak, UTR, ZeroCoverageIntervals, SPATTruncationPoints
+
+TEST_DIR = os.path.dirname(__file__)
 
 
 class TestUTRAnnotation(unittest.TestCase):
     def setUp(self):
-        self.db = gffutils.create_db("test/Chr1.gff", "test/Chr1.db", force=True)
+        self.db = gffutils.create_db(os.path.join(TEST_DIR, "Chr1.gff"), os.path.join(TEST_DIR, "Chr1.db"), force=True)
+        self.coverage_gaps = ZeroCoverageIntervals()
+        self.truncation_points = SPATTruncationPoints()
+
+    def tearDown(self):
+        os.remove(os.path.join(TEST_DIR, "Chr1.db"))
 
     def strand_annotations(self, peaks_filename, strand, expected_annotations, max_distance):
         with open(peaks_filename, 'r') as fin:
@@ -22,13 +32,9 @@ class TestUTRAnnotation(unittest.TestCase):
                     annotations = Annotations()
                     queue = Queue()
                     peak.strand = strand
-                    with mock.patch('peaks2utr.annotations.cached') as cached_mock:
-                        with mock.patch('peaks2utr.annotations.pybedtools') as pybt_mock:
-                            cached_mock.return_value = "test/unmapped.json"
-                            pybt_mock.return_value = mock.MagicMock()
-                            annotate_utr_for_peak(self.db, queue, peak, max_distance=max_distance)
+                    annotate_utr_for_peak(self.db, queue, peak, self.truncation_points, self.coverage_gaps, max_distance=max_distance)
                     if expected_annotations[peak.name] is None:
-                        self.assertIsNone(queue.get())                        
+                        self.assertIsNone(queue.get())
                     elif expected_annotations[peak.name] is NoNearbyFeatures:
                         self.assertTrue(queue.get() is NoNearbyFeatures)
                     else:
@@ -47,7 +53,7 @@ class TestUTRAnnotation(unittest.TestCase):
             'forward_peak_9': {'PBANKA_0100100.1.1': UTR(27916, 29285), 'PBANKA_0100200.1.1': UTR(30482, 31051)},
             'forward_peak_10': {'PBANKA_0100200.1.1': UTR(30482, 33095)},
         }
-        peaks_filename = "test/test_forward_peaks.broadPeak"
+        peaks_filename = os.path.join(TEST_DIR, "test_forward_peaks.broadPeak")
         self.strand_annotations(peaks_filename, '+', expected_annotations, max_distance=2500)
 
     def test_reverse_strand_annotations(self):
@@ -65,7 +71,7 @@ class TestUTRAnnotation(unittest.TestCase):
             'reverse_peak_54': {'PBANKA_0103400.1.1': UTR(154886, 155566)},
             'reverse_peak_143': {'PBANKA_0111300.1.1': UTR(437496, 438265)}
         }
-        peaks_filename = "test/test_reverse_peaks.broadPeak"
+        peaks_filename = os.path.join(TEST_DIR, "test_reverse_peaks.broadPeak")
         self.strand_annotations(peaks_filename, '-', expected_annotations, max_distance=2500)
 
 
