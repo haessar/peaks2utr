@@ -22,4 +22,4 @@ LOG_DIR = os.path.join(os.getcwd(), '.log')
 
 TMP_GFF_FN = "_tmp.gff"
 
-PERC_ALLOCATED_VRAM= 75
+PERC_ALLOCATED_VRAM = 75

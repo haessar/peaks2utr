@@ -32,17 +32,21 @@ def prepare_argparser():
     parser.add_argument('--max-distance', type=int, default=200,
                         help='maximum distance in bases that UTR can be from a transcript.')
     parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria.")
-    parser.add_argument('--extend-utr', action="store_true", help="extend previously existing 3' UTR annotations where possible.")
+    parser.add_argument('--extend-utr', action="store_true",
+                        help="extend previously existing 3' UTR annotations where possible.")
     parser.add_argument('--five-prime-ext', type=int, default=0,
                         help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it.')
-    parser.add_argument('--skip-soft-clip', action="store_true", help="skip the resource-intensive logic to pileup soft-clipped read edges.")
+    parser.add_argument('--skip-soft-clip', action="store_true",
+                        help="skip the resource-intensive logic to pileup soft-clipped read edges.")
     parser.add_argument('--min-pileups', type=int, default=10, help='Minimum number of piled-up mapped reads for UTR cut-off.')
-    parser.add_argument('--min-poly-tail', type=int, default=10, help='Minimum length of poly-A/T tail considered in soft-clipped reads.')
+    parser.add_argument('--min-poly-tail', type=int, default=10,
+                        help='Minimum length of poly-A/T tail considered in soft-clipped reads.')
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
     parser.add_argument('-o', '--output', help="output filename.")
     parser.add_argument('--keep-cache', action="store_true", help="Keep cached files on run completion.")
-    parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
     return parser
 
 
@@ -71,10 +75,11 @@ async def _main():
             os.mkdir(constants.LOG_DIR)
 
         # Add file handler, with level DEBUG.
-        fileHandler = logging.FileHandler(filename=os.path.join(constants.LOG_DIR, '{}_debug.log'.format(__package__)), mode="w")
+        fileHandler = logging.FileHandler(
+            filename=os.path.join(constants.LOG_DIR, '{}_debug.log'.format(__package__)), mode="w")
         fileHandler.setLevel(logging.DEBUG)
         fileHandler.setFormatter(formatter)
-        logging.getLogger().addHandler(fileHandler)        
+        logging.getLogger().addHandler(fileHandler)
 
         if not os.path.exists(constants.CACHE_DIR):
             logging.info("Make .cache directory")
@@ -114,17 +119,20 @@ async def _main():
                 for peak in peaks:
                     peak.strand = constants.STRAND_MAP.get(strand)
                 return peaks
-                
+
         peaks = parse_peaks('forward') + parse_peaks('reverse')
         total_peaks = len(peaks)
         queue = multiprocessing.Queue()
-        
-        processes = [batch_annotate_strand(db, batch, queue, args) for batch in iter_batches(peaks, math.ceil(total_peaks/args.processors))]
+
+        processes = [
+            batch_annotate_strand(db, batch, queue, args)
+            for batch in iter_batches(peaks, math.ceil(total_peaks/args.processors))
+        ]
         for p in processes:
             p.start()
 
         annotations = Annotations()
-        with tqdm(total=total_peaks, desc=f'{"INFO": <8} Iterating over peaks to annotate 3\' UTRs.') as pbar:            
+        with tqdm(total=total_peaks, desc=f'{"INFO": <8} Iterating over peaks to annotate 3\' UTRs.') as pbar:
             for p in processes:
                 for result in yield_from_process(queue, p, pbar):
                     if result:

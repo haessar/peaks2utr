@@ -38,6 +38,7 @@ async def consume_lines(pipe, log_file):
         while line := await pipe.readline():
             f.write(line)
 
+
 def multiprocess_over_dict(f, d):
     """
     Assign a multiprocessing Process to call function f for every key-value pair in d, passing this item
@@ -53,6 +54,7 @@ def multiprocess_over_dict(f, d):
         job.join()
         if job.exitcode != 0:
             raise EXCEPTIONS_MAP.get(f.__name__, Exception)
+
 
 def format_stats_line(msg, total, numerator=None):
     """

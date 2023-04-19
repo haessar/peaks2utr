@@ -49,7 +49,8 @@ class UTR(RangeMixin):
         return self.range == other.range
 
     def _get_id(self, gene, db):
-        existing_utrs = list(db.children(gene, featuretype=['three_prime_UTR', 'three_prime_utr'])) + list(db.children(gene, featuretype=['five_prime_UTR', 'five_prime_utr']))
+        existing_utrs = list(db.children(gene, featuretype=['three_prime_UTR', 'three_prime_utr'])) + \
+                        list(db.children(gene, featuretype=['five_prime_UTR', 'five_prime_utr']))
         if existing_utrs:
             max_utr = sorted([utr.id for utr in existing_utrs], reverse=True)[0]
             max_idx = int(max_utr[-1])
@@ -126,6 +127,7 @@ class SoftClippedRead:
                 return True
         return False
 
+
 class ZeroCoverageIntervals(collections.UserDict):
     """
     Dictionary of zero coverage intervals per chromosome from parsed BED file.
@@ -139,8 +141,8 @@ class ZeroCoverageIntervals(collections.UserDict):
         super().__init__()
         if bed_fn:
             with open(bed_fn, 'r') as f:
-                for l in f.readlines():
-                    chr, start, stop = l.strip().split('\t')
+                for line in f.readlines():
+                    chr, start, stop = line.strip().split('\t')
                     if chr not in self.data:
                         self.data[chr] = []
                     self.data[chr].append(self.Interval(start, stop))
@@ -156,6 +158,7 @@ class ZeroCoverageIntervals(collections.UserDict):
         if chr in self:
             return [i for i in self[chr] if i.start < base < i.end]
         return []
+
 
 class SPATTruncationPoints(collections.UserDict):
     """

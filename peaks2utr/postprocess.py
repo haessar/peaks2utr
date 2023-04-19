@@ -8,7 +8,7 @@ import gffutils
 
 from . import criteria
 from .constants import LOG_DIR, TMP_GFF_FN
-from .utils import cached, format_stats_line, format_stats_line
+from .utils import cached, format_stats_line
 
 
 def write_summary_stats(annotations, total_peaks):
@@ -31,7 +31,7 @@ def merge_and_gt_gff3_sort(db, annotations, new_gff_fn, args):
     Use genometools (gt) binary to sort and tidy tmp file into new combined output gff3 file.
     """
     logging.info("Merging annotations with canonical gff file.")
-    
+
     db = sqlite3.connect(db, check_same_thread=False)
     db = gffutils.FeatureDB(db)
     for gene in db.all_features(featuretype="gene"):
@@ -43,12 +43,12 @@ def merge_and_gt_gff3_sort(db, annotations, new_gff_fn, args):
     log_fn = "gt_gff3.log"
     with open(cached(TMP_GFF_FN), 'w') as fout:
         fout.writelines(annotations)
-    
+
     command = "gt gff3 -sort -retainids -tidy -o {} ".format(new_gff_fn)
     if args.force:
         command += "-force "
     with open(os.path.join(LOG_DIR, log_fn), 'w') as flog:
-        try:            
+        try:
             output = subprocess.check_output(
                 command + cached(TMP_GFF_FN),
                 universal_newlines=True,

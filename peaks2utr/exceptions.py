@@ -1,6 +1,7 @@
 class PybedtoolsError(Exception):
     pass
 
+
 class PysamError(Exception):
     pass
 

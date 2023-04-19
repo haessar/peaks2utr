@@ -23,7 +23,7 @@ class BAMSplitter:
         self.basename = bam_basename
         self.args = args
         self.pbar = None
-    
+
     def split_strands(self):
         self.gap_outputs = {}
         for strand in ["forward", "reverse"]:
@@ -31,7 +31,11 @@ class BAMSplitter:
             if not os.path.isfile(output_file):
                 logging.info("Splitting %s strand from %s." % (strand, self.args.BAM_IN))
                 try:
-                    pysam.view("--threads", str(self.args.processors), "-b", *STRAND_PYSAM_ARGS[strand], "-o", output_file, self.args.BAM_IN, catch_stdout=False)            
+                    pysam.view(
+                        "--threads", str(self.args.processors),
+                        "-b", *STRAND_PYSAM_ARGS[strand],
+                        "-o", output_file,
+                        self.args.BAM_IN, catch_stdout=False)
                 except TypeError as e:
                     logging.error("pysam returned an error: %s" % e)
                     raise
@@ -41,30 +45,33 @@ class BAMSplitter:
                 logging.info("Using cached %s strand BAM file." % strand)
             self.gap_outputs[output_file] = cached("%s_coverage_gaps.bed" % strand)
         self.gap_outputs_to_process = self.gap_outputs.copy()
-    
+
     @staticmethod
     def num_read_groups(bam):
         header = pysam.view("-H", bam).split("\n")
         return len([h for h in header if h.startswith("@RG")])
-    
+
     def split_read_groups(self):
         for strand in ["forward", "reverse"]:
             input_bam = cached(self.basename + '.%s.bam' % strand)
             if len(glob(cached(self.basename + ".%s_*.bam" % strand))) < self.num_read_groups(input_bam):
                 logging.info("Splitting %s-stranded BAM file into read-groups." % strand)
                 pysam.split("-@", str(self.args.processors), "-f", cached("%*_%#.%."), input_bam)
-            
-        self.read_group_bams = sorted(glob(cached(self.basename + ".forward_*.bam")) + glob(cached(self.basename + ".reverse_*.bam")),
-                                      key = lambda x: os.stat(x).st_size,
+
+        self.read_group_bams = sorted(glob(cached(self.basename + ".forward_*.bam")) +
+                                      glob(cached(self.basename + ".reverse_*.bam")),
+                                      key=lambda x: os.stat(x).st_size,
                                       reverse=True)
-        self.spat_outputs = {bf: cached(re.search( r'%s.(.*).bam$' % self.basename, os.path.basename(bf)).group(1) + "_unmapped.json") for bf in self.read_group_bams}
+        self.spat_outputs = {
+            bf: cached(re.search(r'%s.(.*).bam$' % self.basename, os.path.basename(bf)).group(1) + "_unmapped.json")
+            for bf in self.read_group_bams}
         self.spat_outputs_to_process = self.spat_outputs.copy()
-    
+
     def index_bam_file(self, bam_file):
         if not os.path.isfile(cached(bam_file + '.bai')):
             logging.info("Indexing %s." % bam_file)
             pysam.index("-@", str(self.args.processors), bam_file)
-    
+
     def _get_max_reads_for_pbar(self):
         max_reads = 0
         for bf in self.read_group_bams:
@@ -77,17 +84,17 @@ class BAMSplitter:
                     self.max_bam = bf
             else:
                 del self.spat_outputs_to_process[bf]
-        return max_reads        
-    
+        return max_reads
+
     def pileup_soft_clipped_reads(self):
-        if not os.path.isfile(cached("forward_unmapped.json")) or not os.path.isfile(cached("reverse_unmapped.json")):        
+        if not os.path.isfile(cached("forward_unmapped.json")) or not os.path.isfile(cached("reverse_unmapped.json")):
             max_reads = self._get_max_reads_for_pbar()
             if self.spat_outputs_to_process and max_reads > 0:
                 with tqdm(total=max_reads,
-                        desc=f'{"INFO": <8} Iterating over reads to determine SPAT pileups',
-                        bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]') as self.pbar:
+                          desc=f'{"INFO": <8} Iterating over reads to determine SPAT pileups',
+                          bar_format='{l_bar}{bar}| [{elapsed}<{remaining}]') as self.pbar:
                     multiprocess_over_dict(self._count_unmapped_pileups, self.spat_outputs_to_process)
-            
+
             logging.info('Merging SPAT outputs.')
             for strand in ["forward", "reverse"]:
                 strand_output = {}
@@ -99,31 +106,37 @@ class BAMSplitter:
                     json.dump(filter_nested_dict(strand_output, self.args.min_pileups), f)
         else:
             logging.info("Using cached SPAT pileups.")
-    
+
     def _count_unmapped_pileups(self, bam_file, output_file):
-        samfile = pysam.AlignmentFile(bam_file, "rb")            
+        samfile = pysam.AlignmentFile(bam_file, "rb")
         unmapped = defaultdict(lambda: defaultdict(int))
         for seg in samfile.fetch(until_eof=True):
-            read = SoftClippedRead(chr=seg.reference_name, start=seg.reference_start, end=seg.reference_end, cigar=seg.cigarstring, seq=seg.query_sequence, strand="reverse" if seg.is_reverse else "forward")
+            read = SoftClippedRead(
+                chr=seg.reference_name,
+                start=seg.reference_start,
+                end=seg.reference_end,
+                cigar=seg.cigarstring,
+                seq=seg.query_sequence,
+                strand="reverse" if seg.is_reverse else "forward")
             if read.poly_tail_exists(self.args.min_poly_tail):
                 unmapped[read.chr][read.extremity] += 1
             if bam_file == self.max_bam:
                 self.pbar.update()
-                    
+
         with open(output_file, "w") as f:
             json.dump(unmapped, f)
-            
+
     def find_zero_coverage_intervals(self):
         if not os.path.isfile(cached("forward_coverage_gaps.bed")) or not os.path.isfile(cached("reverse_coverage_gaps.bed")):
             logging.info('Filtering intervals with zero coverage.')
             multiprocess_over_dict(self._find_zero_coverage_intervals, self.gap_outputs_to_process)
         else:
             logging.info("Using cached zero coverage intervals.")
-    
+
     def _find_zero_coverage_intervals(self, bam_file, output_file, min_cov=1):
         bed_tool = pybedtools.example_bedtool(bam_file)
-        bed = bed_tool.genome_coverage(bga = True, split=True)
-        gaps = bed.filter(lambda x: float(x.name) < min_cov ).merge()
+        bed = bed_tool.genome_coverage(bga=True, split=True)
+        gaps = bed.filter(lambda x: float(x.name) < min_cov).merge()
         gaps.saveas(cached(output_file))
 
 
@@ -134,9 +147,10 @@ async def create_db(gff_in):
     gff_db = cached(os.path.basename(os.path.splitext(gff_in)[0] + '.db'))
     if not os.path.isfile(gff_db):
         logging.info('Creating gff db.')
-        await sync_to_async(gffutils.create_db)(gff_in, gff_db, force=True, verbose=True, disable_infer_genes=True, disable_infer_transcripts=True)
+        await sync_to_async(gffutils.create_db)(
+            gff_in, gff_db, force=True, verbose=True, disable_infer_genes=True, disable_infer_transcripts=True)
         logging.info('Finished creating gff db.')
-    else:        
+    else:
         logging.info("Using cached gff db.")
     return gff_db
 
@@ -148,7 +162,13 @@ async def call_peaks(bam_basename, strand):
     if not os.path.isfile(cached("%s_peaks.broadPeak" % strand)):
         logging.info("Calling peaks for %s strand with MACS3." % strand)
         process = await asyncio.create_subprocess_exec(
-            "macs3", "callpeak", "-t", cached(bam_basename + '.%s.bam' % strand), "-n", strand, "--nomodel", "--extsize", "200", "--broad", "--outdir", CACHE_DIR,
+            "macs3", "callpeak",
+            "-t", cached(bam_basename + '.%s.bam' % strand),
+            "-n", strand,
+            "--nomodel",
+            "--extsize", "200",
+            "--broad",
+            "--outdir", CACHE_DIR,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT
         )

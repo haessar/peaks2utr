@@ -47,7 +47,16 @@ def set_gene_range(gene, strand, five_prime_ext=0):
 
 def _iter_peaks(db, peaks_batch, queue, truncation_points, coverage_gaps, args):
     for peak in peaks_batch:
-        annotate_utr_for_peak(db, queue, peak, truncation_points.get(peak.strand), coverage_gaps.get(peak.strand), args.max_distance, args.override_utr, args.extend_utr, args.five_prime_ext)
+        annotate_utr_for_peak(
+            db,
+            queue,
+            peak,
+            truncation_points.get(peak.strand),
+            coverage_gaps.get(peak.strand),
+            args.max_distance,
+            args.override_utr,
+            args.extend_utr,
+            args.five_prime_ext)
 
 
 def batch_annotate_strand(db, peaks_batch, queue, args):
@@ -65,7 +74,8 @@ def batch_annotate_strand(db, peaks_batch, queue, args):
     return multiprocessing.Process(target=_iter_peaks, args=(db, peaks_batch, queue, truncation_points, coverage_gaps, args))
 
 
-def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max_distance, override_utr=False, extend_utr=False, five_prime_ext=0):
+def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max_distance, override_utr=False,
+                          extend_utr=False, five_prime_ext=0):
     """
     Find genes in region of given peak and apply criteria to determine if 3' UTR exists for each.
     If so, add to multiprocessing Queue.
@@ -96,8 +106,9 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
             except criteria.CriteriaFailure as e:
                 logging.debug("%s - %s" % (type(e).__name__, e))
             else:
-                colour="3"
-                intersect = utr.range.intersection(map(int, sorted(truncation_points[peak.chr], key=int))) if peak.chr in truncation_points else None
+                colour = "3"
+                intersect = utr.range.intersection(map(int, sorted(truncation_points[peak.chr], key=int))) \
+                    if peak.chr in truncation_points else None
                 if peak.strand == "+":
                     gaps = coverage_gaps.filter(peak.chr, utr.end)
                     try:
@@ -106,7 +117,7 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                         pass
                     else:
                         utr.end = max(gene.end, gap_edge)
-                        colour="6"
+                        colour = "6"
                 else:
                     gaps = coverage_gaps.filter(peak.chr, utr.start)
                     try:
@@ -115,13 +126,13 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                         pass
                     else:
                         utr.start = min(gene.start, gap_edge)
-                        colour="6"
+                        colour = "6"
                 if intersect:
                     if peak.strand == "+":
                         utr.end = max(intersect)
                     else:
                         utr.start = min(intersect)
-                    colour="4"
+                    colour = "4"
                 if utr.is_valid():
                     logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                     utr.generate_feature(gene, db, colour)
