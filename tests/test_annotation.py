@@ -32,7 +32,9 @@ class TestUTRAnnotation(unittest.TestCase):
                     annotations = Annotations()
                     queue = Queue()
                     peak.strand = strand
-                    annotate_utr_for_peak(self.db, queue, peak, self.truncation_points, self.coverage_gaps, max_distance=max_distance)
+                    annotate_utr_for_peak(self.db, queue, peak,
+                                          self.truncation_points, self.coverage_gaps,
+                                          max_distance=max_distance)
                     if expected_annotations[peak.name] is None:
                         self.assertIsNone(queue.get())
                     elif expected_annotations[peak.name] is NoNearbyFeatures:
