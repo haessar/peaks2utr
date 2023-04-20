@@ -8,7 +8,6 @@ import re
 
 from asgiref.sync import sync_to_async
 import gffutils
-import pybedtools
 import pysam
 from tqdm import tqdm
 
@@ -134,7 +133,8 @@ class BAMSplitter:
             logging.info("Using cached zero coverage intervals.")
 
     def _find_zero_coverage_intervals(self, bam_file, output_file, min_cov=1):
-        bed_tool = pybedtools.example_bedtool(bam_file)
+        from pybedtools import BedTool
+        bed_tool = BedTool(bam_file)
         bed = bed_tool.genome_coverage(bga=True, split=True)
         gaps = bed.filter(lambda x: float(x.name) < min_cov).merge()
         gaps.saveas(cached(output_file))
