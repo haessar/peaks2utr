@@ -1,4 +1,5 @@
 # peaks2utr: a robust, parallelized Python CLI for annotating 3' UTR
+![CI](https://github.com/haessar/peaks2utr/actions/workflows/ci.yml/badge.svg?branch=master)
 [![PYPI - Version](https://img.shields.io/pypi/v/peaks2utr.svg)](https://pypi.org/project/peaks2utr/)
 [![PYPI - Python Version](https://img.shields.io/pypi/pyversions/peaks2utr.svg)](https://pypi.org/project/peaks2utr/)
  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
