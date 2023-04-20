@@ -168,4 +168,4 @@ class SPATTruncationPoints(collections.UserDict):
         super().__init__()
         if json_fn:
             with open(json_fn, 'r') as f:
-                self.data.update(json.load(f))
+                self.data.update(json.load(f) or {})
