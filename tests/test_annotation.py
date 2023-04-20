@@ -1,12 +1,9 @@
 import csv
 import os
 from queue import Queue
-import sys
 import unittest
 
 import gffutils
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from peaks2utr.annotations import Annotations, NoNearbyFeatures, annotate_utr_for_peak
 from peaks2utr.models import Peak, UTR, ZeroCoverageIntervals, SPATTruncationPoints
