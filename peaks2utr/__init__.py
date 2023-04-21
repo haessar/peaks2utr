@@ -72,6 +72,10 @@ async def _main():
     The main function / pipeline for peaks2utr.
     """
     try:
+        ###################
+        # Setup logging   #
+        ###################
+
         # Change root logger level from WARNING (default) to NOTSET in order for all messages to be delegated.
         logging.getLogger().setLevel(logging.NOTSET)
 
@@ -93,6 +97,10 @@ async def _main():
         fileHandler.setFormatter(formatter)
         logging.getLogger().addHandler(fileHandler)
 
+        ###################
+        # Define outputs  #
+        ###################
+
         if not os.path.exists(constants.CACHE_DIR):
             logging.info("Make .cache directory")
             os.mkdir(constants.CACHE_DIR)
@@ -102,6 +110,10 @@ async def _main():
 
         gff_basename = os.path.basename(os.path.splitext(args.GFF_IN)[0])
         new_gff_fn = gff_basename + ".new.gff" if not args.output else args.output
+
+        ###################
+        # Perform checks  #
+        ###################
 
         if os.path.exists(new_gff_fn) and not args.force:
             logging.error("%s already exists. Re-run with -f flag to force overwrite of output files. Aborting." % new_gff_fn)
@@ -118,6 +130,10 @@ async def _main():
             bs.split_read_groups()
             bs.pileup_soft_clipped_reads()
         bs.find_zero_coverage_intervals()
+        ###################
+        # Pre-processing  #
+        ###################
+
 
         db, _, _ = await asyncio.gather(
             create_db(args.GFF_IN),
@@ -152,6 +168,10 @@ async def _main():
                             annotations.no_features_counter += 1
                         else:
                             annotations.update(result)
+
+        ###################
+        # Post-processing #
+        ###################
 
         merge_and_gt_gff3_sort(db, annotations, new_gff_fn, args)
         write_summary_stats(annotations, total_peaks)
