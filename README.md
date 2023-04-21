@@ -33,7 +33,7 @@ apt-get install bedtools
 apt-get install genometools
 ```
 ## Quick start
-To check that peaks2utr has installed correctly, there is a small demo set of input files in this repository: <a href="https://github.com/haessar/peaks2utr/blob/ed5a7fd3935bd5bd77819ae9a6a5224be4e55b94/demo/Tb927_01_v5.1.gff" target="_blank" >Tb927_01_v5.1.gff</a> & <a href="https://github.com/haessar/peaks2utr/blob/ed5a7fd3935bd5bd77819ae9a6a5224be4e55b94/demo/Tb927_01_v5.1.slice.bam" target="_blank" >Tb927_01_v5.1.slice.bam</a>. After installation, simply run the following in your terminal
+To check that peaks2utr has installed correctly, there is a small demo set of input files in this repository: <a href="https://github.com/haessar/peaks2utr/blob/master/peaks2utr/demo/Tb927_01_v5.1.gff" target="_blank" >Tb927_01_v5.1.gff</a> & <a href="https://github.com/haessar/peaks2utr/blob/master/peaks2utr/demo/Tb927_01_v5.1.slice.bam" target="_blank" >Tb927_01_v5.1.slice.bam</a>. After installation, simply run the following in your terminal
 ```
 peaks2utr-demo
 ```
