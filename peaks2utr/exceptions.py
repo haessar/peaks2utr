@@ -11,7 +11,7 @@ class MACS3Error(Exception):
 
 
 EXCEPTIONS_MAP = {
-    "_filter_low_coverage_intervals": PybedtoolsError,
+    "_find_zero_coverage_intervals": PybedtoolsError,
     "_count_unmapped_pileups": PysamError,
     "call_peaks": MACS3Error,
 }
