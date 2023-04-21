@@ -23,6 +23,13 @@ class BAMSplitter:
         self.args = args
         self.pbar = None
 
+    def process(self):
+        self.split_strands()
+        if not self.args.skip_soft_clip:
+            self.split_read_groups()
+            self.pileup_soft_clipped_reads()
+        self.find_zero_coverage_intervals()
+
     def split_strands(self):
         self.gap_outputs = {}
         for strand in ["forward", "reverse"]:

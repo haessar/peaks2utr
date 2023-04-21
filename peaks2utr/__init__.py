@@ -123,17 +123,11 @@ async def _main():
             logging.error("Only one of --extend-utr and --override-utr can be used simultaneously. Aborting.")
             sys.exit(1)
 
-        bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
-        bs = BAMSplitter(bam_basename, args)
-        bs.split_strands()
-        if not args.skip_soft_clip:
-            bs.split_read_groups()
-            bs.pileup_soft_clipped_reads()
-        bs.find_zero_coverage_intervals()
         ###################
         # Pre-processing  #
         ###################
 
+        BAMSplitter(bam_basename, args).process()
 
         db, _, _ = await asyncio.gather(
             create_db(args.GFF_IN),
