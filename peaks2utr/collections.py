@@ -1,5 +1,9 @@
 import collections
+import csv
 import json
+
+from .constants import STRAND_MAP
+from .models import Peak
 
 
 class ZeroCoverageIntervalsDict(collections.UserDict):
@@ -45,3 +49,14 @@ class SPATTruncationPointsDict(collections.UserDict):
                 self.data.update(json.load(f) or {})
 
 
+class BroadPeaksList(collections.UserList):
+    """
+    List of MACS3 broad peaks
+    """
+    def __init__(self, initlist=None, broadpeak_fn=None, strand=None):
+        super().__init__(initlist)
+        if broadpeak_fn:
+            with open(broadpeak_fn, 'r') as f:
+                self.data = [Peak(*peak) for peak in csv.reader(f, delimiter="\t")]
+                for peak in self.data:
+                    peak.strand = STRAND_MAP.get(strand)

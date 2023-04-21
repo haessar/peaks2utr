@@ -71,6 +71,7 @@ async def _main():
     """
     The main function / pipeline for peaks2utr.
     """
+    from .collections import BroadPeaksList
     try:
         ###################
         # Setup logging   #
@@ -134,18 +135,16 @@ async def _main():
             call_peaks(bam_basename, "forward"),
             call_peaks(bam_basename, "reverse")
         )
-
-        def parse_peaks(strand):
-            with open(cached(strand + "_peaks.broadPeak"), 'r') as fin:
-                peaks = [models.Peak(*peak) for peak in csv.reader(fin, delimiter="\t")]
-                for peak in peaks:
-                    peak.strand = constants.STRAND_MAP.get(strand)
-                return peaks
-
-        peaks = parse_peaks('forward') + parse_peaks('reverse')
+        peaks = \
+            BroadPeaksList(broadpeak_fn=cached("forward_peaks.broadPeak"), strand="forward") + \
+            BroadPeaksList(broadpeak_fn=cached("reverse_peaks.broadPeak"), strand="reverse")
         total_peaks = len(peaks)
-        queue = multiprocessing.Queue()
 
+        ###################
+        # Process peaks   #
+        ###################
+
+        queue = multiprocessing.Queue()
         processes = [
             batch_annotate_strand(db, batch, queue, args)
             for batch in iter_batches(peaks, math.ceil(total_peaks/args.processors))
