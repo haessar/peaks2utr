@@ -172,11 +172,11 @@ async def call_peaks(bam_basename, strand):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT
         )
-        asyncio.create_task(consume_lines(process.stdout, os.path.join(LOG_DIR, "%s_macs2.log" % strand)))
+        asyncio.create_task(consume_lines(process.stdout, os.path.join(LOG_DIR, "%s_macs3.log" % strand)))
         exit_code = await process.wait()
         if exit_code != 0:
             logging.error("MACS3 returned an error.")
-            raise EXCEPTIONS_MAP.get("call_peaks", Exception)("Check %s_macs2.log." % strand)
+            raise EXCEPTIONS_MAP.get(call_peaks.__name__, Exception)("Check %s_macs3.log." % strand)
         logging.info("Finished calling %s strand peaks." % strand)
     else:
         logging.info("Using cached %s strand peaks file." % strand)
