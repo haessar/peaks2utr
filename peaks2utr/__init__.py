@@ -1,6 +1,6 @@
 import argparse
 import asyncio
-import csv
+import glob
 import logging
 import math
 import multiprocessing
@@ -48,6 +48,18 @@ def prepare_argparser():
     parser.add_argument('--version', action='version',
                         version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
     return parser
+
+
+def demo():
+    """
+    Entry-point for peaks2utr-demo
+    """
+    demo_dir = os.path.join(os.path.dirname(__file__), "demo")
+    gff_in = glob.glob(os.path.join(demo_dir, "*.gff"))[0]
+    bam_in = glob.glob(os.path.join(demo_dir, "*.bam"))[0]
+    argparser = prepare_argparser()
+    args = argparser.parse_args([gff_in, bam_in, "-f"])
+    asyncio.run(_main(args))
 
 
 def main():
