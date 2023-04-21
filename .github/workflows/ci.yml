@@ -26,6 +26,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        apt-get -y update; apt-get -y install bedtools
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
         pip install .
