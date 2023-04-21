@@ -1,12 +1,14 @@
 import csv
 import os
+import os.path
 from queue import Queue
 import unittest
 
 import gffutils
 
 from peaks2utr.annotations import Annotations, NoNearbyFeatures, annotate_utr_for_peak
-from peaks2utr.models import Peak, UTR, ZeroCoverageIntervals, SPATTruncationPoints
+from peaks2utr.models import Peak, UTR
+from peaks2utr.collections import ZeroCoverageIntervalsDict, SPATTruncationPointsDict
 
 TEST_DIR = os.path.dirname(__file__)
 
@@ -14,8 +16,8 @@ TEST_DIR = os.path.dirname(__file__)
 class TestUTRAnnotation(unittest.TestCase):
     def setUp(self):
         self.db = gffutils.create_db(os.path.join(TEST_DIR, "Chr1.gff"), os.path.join(TEST_DIR, "Chr1.db"), force=True)
-        self.coverage_gaps = ZeroCoverageIntervals()
-        self.truncation_points = SPATTruncationPoints()
+        self.coverage_gaps = ZeroCoverageIntervalsDict()
+        self.truncation_points = SPATTruncationPointsDict()
 
     def tearDown(self):
         os.remove(os.path.join(TEST_DIR, "Chr1.db"))

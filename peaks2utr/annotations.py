@@ -6,7 +6,10 @@ import sqlite3
 
 import gffutils
 
-from . import constants, criteria, models
+from . import criteria
+from .constants import STRAND_MAP
+from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
+from .models import UTR
 from .utils import cached
 
 
@@ -66,9 +69,9 @@ def batch_annotate_strand(db, peaks_batch, queue, args):
     """
     truncation_points = {}
     coverage_gaps = {}
-    for strand, symbol in constants.STRAND_MAP.items():
-        truncation_points[symbol] = models.SPATTruncationPoints(cached(strand + "_unmapped.json"))
-        coverage_gaps[symbol] = models.ZeroCoverageIntervals(cached(strand + "_coverage_gaps.bed"))
+    for strand, symbol in STRAND_MAP.items():
+        truncation_points[symbol] = SPATTruncationPointsDict(json_fn=cached(strand + "_unmapped.json"))
+        coverage_gaps[symbol] = ZeroCoverageIntervalsDict(bed_fn=cached(strand + "_coverage_gaps.bed"))
     db = sqlite3.connect(db, check_same_thread=False)
     db = gffutils.FeatureDB(db)
     return multiprocessing.Process(target=_iter_peaks, args=(db, peaks_batch, queue, truncation_points, coverage_gaps, args))
@@ -96,7 +99,7 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                 set_gene_range(gene, peak.strand)
                 criteria.assert_whether_utr_already_annotated(peak, gene, db, override_utr, extend_utr)
                 criteria.assert_not_a_subset(peak, gene)
-                utr = models.UTR(start=peak.start, end=peak.end)
+                utr = UTR(start=peak.start, end=peak.end)
                 criteria.assert_3_prime_end_and_truncate(peak, gene, utr)
                 if len(genes) > idx + 1:
                     next_gene = copy.deepcopy(genes[idx + 1])
