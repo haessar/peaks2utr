@@ -1,11 +1,9 @@
 from abc import ABC
-import collections
-import json
 import re
 
 import gffutils
 
-from .constants import STRAND_CIGAR_SOFT_CLIP_REGEX
+from .constants import AnnotationColour, STRAND_CIGAR_SOFT_CLIP_REGEX
 
 
 class RangeMixin(ABC):
@@ -59,7 +57,7 @@ class UTR(RangeMixin):
         else:
             return "utr_" + gene.id + ":mRNA_1"
 
-    def generate_feature(self, gene, db, colour="3"):
+    def generate_feature(self, gene, db, colour=AnnotationColour.Extended):
         """
         Generate three_prime_UTR feature in gff3 format.
         """

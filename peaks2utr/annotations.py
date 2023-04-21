@@ -7,7 +7,7 @@ import sqlite3
 import gffutils
 
 from . import criteria
-from .constants import STRAND_MAP
+from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
 from .models import UTR
 from .utils import cached
@@ -109,7 +109,7 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
             except criteria.CriteriaFailure as e:
                 logging.debug("%s - %s" % (type(e).__name__, e))
             else:
-                colour = "3"
+                colour = AnnotationColour.Extended
                 intersect = utr.range.intersection(map(int, sorted(truncation_points[peak.chr], key=int))) \
                     if peak.chr in truncation_points else None
                 if peak.strand == "+":
@@ -120,7 +120,7 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                         pass
                     else:
                         utr.end = max(gene.end, gap_edge)
-                        colour = "6"
+                        colour = AnnotationColour.TruncatedZeroCoverage
                 else:
                     gaps = coverage_gaps.filter(peak.chr, utr.start)
                     try:
@@ -129,13 +129,13 @@ def annotate_utr_for_peak(db, queue, peak, truncation_points, coverage_gaps, max
                         pass
                     else:
                         utr.start = min(gene.start, gap_edge)
-                        colour = "6"
+                        colour = AnnotationColour.TruncatedZeroCoverage
                 if intersect:
                     if peak.strand == "+":
                         utr.end = max(intersect)
                     else:
                         utr.start = min(intersect)
-                    colour = "4"
+                    colour = AnnotationColour.ExtendedWithSPAT
                 if utr.is_valid():
                     logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                     utr.generate_feature(gene, db, colour)

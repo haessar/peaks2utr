@@ -2,6 +2,17 @@ import os
 import os.path
 
 
+class AnnotationColour:
+    artemis_colour_map = {
+        "red": "4",
+        "green": "3",
+        "blue": "6",
+    }
+    Extended = artemis_colour_map["green"]
+    ExtendedWithSPAT = artemis_colour_map["blue"]
+    TruncatedZeroCoverage = artemis_colour_map["red"]
+
+
 STRAND_MAP = {
     'forward': '+',
     'reverse': '-',
