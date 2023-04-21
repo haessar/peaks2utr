@@ -1,26 +1,12 @@
-import argparse
 import asyncio
-import glob
-import logging
-import math
-import multiprocessing
 import os
 import os.path
-import pkg_resources
-import shutil
-import sys
-
-import psutil
-from tqdm import tqdm
-
-from . import constants, models
-from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
-from .utils import cached, iter_batches, yield_from_process, limit_memory
-from .preprocess import BAMSplitter, call_peaks, create_db
-from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
 
 
 def prepare_argparser():
+    import argparse
+    import pkg_resources
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=r"""
@@ -66,24 +52,50 @@ def demo():
     """
     Entry-point for peaks2utr-demo
     """
+    from glob import glob
+
     demo_dir = os.path.join(os.path.dirname(__file__), "demo")
-    gff_in = glob.glob(os.path.join(demo_dir, "*.gff"))[0]
-    bam_in = glob.glob(os.path.join(demo_dir, "*.bam"))[0]
+    gff_in = glob(os.path.join(demo_dir, "*.gff"))[0]
+    bam_in = glob(os.path.join(demo_dir, "*.bam"))[0]
     argparser = prepare_argparser()
     args = argparser.parse_args([gff_in, bam_in, "-f"])
     asyncio.run(_main(args))
 
 
 def main():
-    limit_memory(constants.PERC_ALLOCATED_VRAM * psutil.virtual_memory().total / 100)
-    asyncio.run(_main())
+    """
+    Main entry-point
+    """
+    from psutil import virtual_memory
+
+    from .constants import PERC_ALLOCATED_VRAM
+    from .utils import limit_memory
+
+    limit_memory(PERC_ALLOCATED_VRAM * virtual_memory().total / 100)
+    argparser = prepare_argparser()
+    args = argparser.parse_args()
+    asyncio.run(_main(args))
 
 
-async def _main():
+async def _main(args):
     """
     The main function / pipeline for peaks2utr.
     """
+    import logging
+    import math
+    import multiprocessing
+    import shutil
+    import sys
+
+    from tqdm import tqdm
+
+    from . import constants
+    from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
     from .collections import BroadPeaksList
+    from .utils import cached, iter_batches, yield_from_process
+    from .preprocess import BAMSplitter, call_peaks, create_db
+    from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
+
     try:
         ###################
         # Setup logging   #
@@ -118,11 +130,9 @@ async def _main():
             logging.info("Make .cache directory")
             os.mkdir(constants.CACHE_DIR)
 
-        argparser = prepare_argparser()
-        args = argparser.parse_args()
-
         gff_basename = os.path.basename(os.path.splitext(args.GFF_IN)[0])
         new_gff_fn = gff_basename + ".new.gff" if not args.output else args.output
+        bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
 
         ###################
         # Perform checks  #
