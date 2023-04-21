@@ -22,9 +22,21 @@ from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
 
 def prepare_argparser():
     parser = argparse.ArgumentParser(
-        description="""
-        Use MACS3 to build forward and reverse peaks files for given .bam file.
-        Iterate peaks through set of criteria to determine UTR viability, before annotating in .gff file.
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=r"""
+        ____________________________________________________________________
+                                                  __
+                                   /            /    )
+        ------__-----__-----__----/-__----__-----___/------------_/_----)__-
+            /   )  /___)  /   )  /(      (_ `  /         /   /   /     /   )
+        ___/___/__(___ __(___(__/___\___(__)__/____/____(___(___(_ ___/_____
+          /
+         /
+
+        Use MACS3 to build forward and reverse peaks files for given .bam
+        file.
+        Iterate peaks through set of criteria to determine UTR viability,
+        before annotating in .gff file.
         """
     )
     parser.add_argument('GFF_IN', help="input 'canonical' annotations file in gff or gtf format.")
