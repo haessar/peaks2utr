@@ -41,7 +41,14 @@ class UTR(RangeMixin):
         self.feature = None
 
     def __repr__(self):
+        if self.feature:
+            return self.feature.__repr__()
         return "<%s: (%s, %s)>" % (self.__class__.__name__, self.start, self.end)
+
+    def __str__(self):
+        if self.feature:
+            return self.feature.__str__()
+        return super().__str__()
 
     def __eq__(self, other):
         return self.range == other.range

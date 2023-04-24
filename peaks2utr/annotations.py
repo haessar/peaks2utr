@@ -31,10 +31,7 @@ class Annotations(collections.UserDict):
 
     def __iter__(self):
         for _, features in self.data.items():
-            nf = features.copy()
-            if "utr" in nf:
-                nf["utr"] = nf["utr"].feature
-            yield '\n'.join([str(f) for _, f in nf.items()]) + '\n'
+            yield '\n'.join([str(f) for _, f in features.items()]) + '\n'
 
 
 def set_gene_range(gene, strand, five_prime_ext=0):
