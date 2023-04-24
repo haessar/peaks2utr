@@ -94,7 +94,7 @@ async def _main(args):
     from .collections import BroadPeaksList
     from .utils import cached, iter_batches, yield_from_process
     from .preprocess import BAMSplitter, call_peaks, create_db
-    from .postprocess import merge_and_gt_gff3_sort, write_summary_stats
+    from .postprocess import merge_annotations, gt_gff3_sort, write_summary_stats
 
     try:
         ###################
@@ -188,7 +188,8 @@ async def _main(args):
         # Post-processing #
         ###################
 
-        merge_and_gt_gff3_sort(db, annotations, new_gff_fn, args)
+        merge_annotations(db, annotations)
+        gt_gff3_sort(annotations, new_gff_fn, args.force)
         write_summary_stats(annotations, total_peaks)
 
         logging.info("%s finished successfully." % __package__)
