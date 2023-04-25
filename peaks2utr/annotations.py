@@ -73,6 +73,7 @@ class Annotations(collections.UserDict):
             db_path (string): GFFUtils sqlite3 db file path.
         """
         self.db_path = db_path
+        return self
 
     def __enter__(self):
         self.processes = [
