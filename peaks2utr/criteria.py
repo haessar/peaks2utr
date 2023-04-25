@@ -70,24 +70,25 @@ def assert_3_prime_end_and_truncate(peak, transcript, utr):
         raise CriteriaFailure("Peak %s corresponds to 5'-end of transcript %s" % (peak.name, transcript.id))
 
 
-def truncate_5_prime_end(peak, next_gene, utr):
+def truncate_5_prime_end(peak, next_gene, utr, five_prime_ext=0):
     """
     If a peak is broad enough it can potentially overlap the 5'-end of the following gene, so we check for an
-    intersection and truncate if it exists.
+    intersection and truncate if it exists (taking into account assumed 5' extension).
     """
     if utr.range.intersection(next_gene.range):
         logging.debug("Peak %s overlapping following gene %s: Truncating" % (peak.name, next_gene.id))
         if peak.strand == "+":
-            utr.end = next_gene.start
+            utr.end = next_gene.start - five_prime_ext
         else:
-            utr.start = next_gene.end
+            utr.start = next_gene.end + five_prime_ext
 
 
-def belongs_to_next_gene(peak, next_gene):
+def belongs_to_next_gene(peak, next_gene, five_prime_ext=0):
     """
     If the max_distance is large enough, it's entirely possible for a peak to occur after the start of the following
     gene and still be within range of the present gene. In this case we want to consider it "belonging" to the following
-    gene only.
+    gene only (taking into account assumed 5' extension).
     """
-    if (peak.strand == "+" and peak.start > next_gene.start) or (peak.strand == "-" and peak.end < next_gene.end):
+    if (peak.strand == "+" and peak.start > next_gene.start - five_prime_ext) or \
+       (peak.strand == "-" and peak.end < next_gene.end + five_prime_ext):
         raise CriteriaFailure("Peak %s belongs entirely to following gene %s" % (peak.name, next_gene.id))

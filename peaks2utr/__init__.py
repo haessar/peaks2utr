@@ -167,9 +167,10 @@ async def _main(args):
         # Process peaks   #
         ###################
 
-        with Annotations(db, peaks, args) as annotations:
-            for p in annotations.processes:
-                for result in yield_from_process(annotations.queue, p, annotations.pbar):
+        annotations = Annotations(peaks, args)
+        with annotations(db) as pipeline:
+            for p in pipeline.processes:
+                for result in yield_from_process(pipeline.queue, p, pipeline.pbar):
                     if result:
                         if result is NoNearbyFeatures:
                             annotations.no_features_counter += 1

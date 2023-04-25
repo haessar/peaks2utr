@@ -4,10 +4,10 @@ import shutil
 import subprocess
 
 import sqlite3
-import gffutils
 
 from . import criteria
 from .constants import FeatureTypes, LOG_DIR, TMP_GFF_FN
+from .models import FeatureDB
 from .utils import cached, format_stats_line
 
 
@@ -34,7 +34,7 @@ def merge_annotations(db, annotations):
     logging.info("Merging annotations with canonical gff file.")
 
     db = sqlite3.connect(db, check_same_thread=False)
-    db = gffutils.FeatureDB(db)
+    db = FeatureDB(db)
     for gene in db.all_features(featuretype=FeatureTypes.Gene):
         if gene.id not in annotations:
             features = {"gene": gene}

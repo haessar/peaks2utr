@@ -35,7 +35,21 @@ class Peak(RangeMixin):
 
 
 class Feature(gffutils.Feature, RangeMixin):
+    """
+    gffutils.Feature with range property
+    """
     pass
+
+
+class FeatureDB(gffutils.FeatureDB):
+    def _feature_returner(self, **kwargs):
+        """
+        Overwrite the gffutils.FeatureDB._feature_returner method to "slot in" Feature with added range property
+        """
+        kwargs.setdefault('dialect', self.dialect)
+        kwargs.setdefault('keep_order', self.keep_order)
+        kwargs.setdefault('sort_attribute_values', self.sort_attribute_values)
+        return Feature(**kwargs)
 
 
 class UTR(RangeMixin):
@@ -71,13 +85,13 @@ class UTR(RangeMixin):
         Generate three_prime_UTR feature in gff3 format.
         """
         d = {
-            "seqid": gene.chrom,
+            "seqid": transcript.chrom,
             "source": __package__,
             "featuretype": FeatureTypes.ThreePrimeUTR[0],
             "start": self.start,
             "end": self.end,
             "score": '.',
-            "strand": gene.strand,
+            "strand": transcript.strand,
             "frame": '.',
             "dialect": GFFUTILS_GTF_DIALECT if gtf_in else GFFUTILS_GFF_DIALECT,
         }

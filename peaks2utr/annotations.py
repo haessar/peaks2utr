@@ -11,7 +11,7 @@ from tqdm import tqdm
 from . import constants, criteria
 from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
-from .models import UTR
+from .models import UTR, FeatureDB
 from .utils import cached, feature_from_line, iter_batches
 
 
@@ -20,14 +20,13 @@ class NoNearbyFeatures:
 
 
 class Annotations(collections.UserDict):
-    def __init__(self, db, peaks, args):
+    def __init__(self, peaks, args, queue=None):
         super().__init__()
         self.no_features_counter = 0
-        self.db = db
         self.peaks = peaks
         self.total_peaks = len(peaks)
         self.args = args
-        self.queue = multiprocessing.Queue()
+        self.queue = queue or multiprocessing.Queue()
 
     def __setitem__(self, gene, new_features):
         existing_features = self.get(gene)
@@ -40,27 +39,6 @@ class Annotations(collections.UserDict):
         for _, features in self.data.items():
             yield '\n'.join([str(self._apply_feature_dialect(f)) for _, f in features.items()]) + '\n'
 
-    def __enter__(self):
-        self.processes = [
-            self.batch_annotate_strand(batch)
-            for batch in iter_batches(self.peaks, math.ceil(self.total_peaks/self.args.processors))
-        ]
-        for p in self.processes:
-            p.start()
-        self.pbar = tqdm(total=self.total_peaks, desc=f'{"INFO": <8} Iterating over peaks to annotate 3\' UTRs.')
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.pbar.close()
-
-    def _iter_peaks(self, db, peaks_batch, truncation_points, coverage_gaps):
-        for peak in peaks_batch:
-            self.annotate_utr_for_peak(
-                db,
-                peak,
-                truncation_points.get(peak.strand),
-                coverage_gaps.get(peak.strand))
-
     def _apply_feature_dialect(self, feature):
         if self.args.gtf_in != self.args.gtf_out:
             attrs = dict(feature.attributes)
@@ -69,11 +47,12 @@ class Annotations(collections.UserDict):
                 if not attrs.get('ID'):
                     attrs['ID'] = [feature.id]
                 if not attrs.get('Parent') and feature.featuretype not in constants.FeatureTypes.Gene:
-                    attrs['Parent'] = attrs['gene_id'] if feature.featuretype in constants.FeatureTypes.GtfTranscript else attrs['transcript_id']
+                    attrs['Parent'] = attrs['gene_id'] if feature.featuretype in constants.FeatureTypes.Transcript else \
+                                      attrs['transcript_id']
             # GFF3 in, GTF out
             elif self.args.gtf_out and not (attrs.get('gene_id') and attrs.get('transcript_id')):
                 if feature.featuretype not in constants.FeatureTypes.Gene:
-                    if feature.featuretype in constants.FeatureTypes.GffTranscript:
+                    if feature.featuretype in constants.FeatureTypes.Transcript:
                         attrs['gene_id'] = attrs['Parent']
                         attrs['transcript_id'] = [feature.id]
                     else:
@@ -88,7 +67,31 @@ class Annotations(collections.UserDict):
             dialect_out=constants.GFFUTILS_GTF_DIALECT if self.args.gtf_out else constants.GFFUTILS_GFF_DIALECT,
         )
 
-    def batch_annotate_strand(self, peaks_batch):
+    def __call__(self, db_path):
+        """
+        Args:
+            db_path (string): GFFUtils sqlite3 db file path.
+        """
+        self.db_path = db_path
+
+    def __enter__(self):
+        self.processes = [
+            self._batch_annotate_strand(batch)
+            for batch in iter_batches(self.peaks, math.ceil(self.total_peaks/self.args.processors))
+        ]
+        for p in self.processes:
+            p.start()
+        self.pbar = tqdm(total=self.total_peaks, desc=f'{"INFO": <8} Iterating over peaks to annotate 3\' UTRs.')
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.pbar.close()
+
+    def _connect_db(self):
+        db = sqlite3.connect(self.db_path, check_same_thread=False)
+        return FeatureDB(db)
+
+    def _batch_annotate_strand(self, peaks_batch):
         """
         Create multiprocessing Process to handle batch of peaks. Connect to sqlite3 db for each batch to prevent
         serialization issues.
@@ -98,29 +101,42 @@ class Annotations(collections.UserDict):
         for strand, symbol in STRAND_MAP.items():
             truncation_points[symbol] = SPATTruncationPointsDict(json_fn=cached(strand + "_unmapped.json"))
             coverage_gaps[symbol] = ZeroCoverageIntervalsDict(bed_fn=cached(strand + "_coverage_gaps.bed"))
-        _db = sqlite3.connect(self.db, check_same_thread=False)
-        _db = gffutils.FeatureDB(_db)
-        return multiprocessing.Process(target=self._iter_peaks, args=(_db, peaks_batch, truncation_points, coverage_gaps))
+        db = self._connect_db()
+        return multiprocessing.Process(target=self._iter_peaks, args=(db, peaks_batch, truncation_points, coverage_gaps))
+
+    def _iter_peaks(self, db, peaks_batch, truncation_points, coverage_gaps):
+        for peak in peaks_batch:
+            self.annotate_utr_for_peak(
+                db,
+                peak,
+                truncation_points.get(peak.strand),
+                coverage_gaps.get(peak.strand))
+
+    def _filter_db(self, db, chr, start, end, strand, featuretype):
+        features = list(db.region(
+            seqid=chr,
+            start=start - self.args.max_distance,
+            end=end + self.args.max_distance,
+            strand=strand,
+            featuretype=featuretype)
+        )
+        return sorted(features, key=lambda x: x.start, reverse=False if strand == "+" else True)
 
     def annotate_utr_for_peak(self, db, peak, truncation_points, coverage_gaps):
         """
         Find genes in region of given peak and apply criteria to determine if 3' UTR exists for each.
         If so, add to multiprocessing Queue.
+
+        Args:
+            db (gffutils.interface.FeatureDB)
         """
         utr_found = False
-        genes = list(db.region(
-            seqid=peak.chr,
-            start=peak.start - self.args.max_distance,
-            end=peak.end + self.args.max_distance,
-            strand=peak.strand,
-            featuretype=constants.FeatureTypes.Gene)
-        )
-        genes = sorted(genes, key=lambda x: x.start, reverse=False if peak.strand == "+" else True)
+        genes = self._filter_db(db, peak.chr, peak.start, peak.end, peak.strand, constants.FeatureTypes.Gene) or []
         if genes:
             for idx, gene in enumerate(genes):
                 transcripts = db.children(
                     gene,
-                    featuretype=constants.FeatureTypes.GtfTranscript if self.args.gtf_in else constants.FeatureTypes.GffTranscript,
+                    featuretype=constants.FeatureTypes.Transcript,
                     order_by="end" if peak.strand == "+" else "start",
                     reverse=True if peak.strand == "+" else False
                 )
@@ -130,7 +146,6 @@ class Annotations(collections.UserDict):
                 except StopIteration:
                     continue
                 try:
-                    set_feature_range(transcript, peak.strand)
                     criteria.assert_whether_utr_already_annotated(peak, transcript, db,
                                                                   self.args.override_utr, self.args.extend_utr)
                     criteria.assert_not_a_subset(peak, transcript)
@@ -138,9 +153,8 @@ class Annotations(collections.UserDict):
                     criteria.assert_3_prime_end_and_truncate(peak, transcript, utr)
                     if len(genes) > idx + 1:
                         next_gene = copy.deepcopy(genes[idx + 1])
-                        set_feature_range(next_gene, peak.strand, self.args.five_prime_ext)
-                        criteria.belongs_to_next_gene(peak, next_gene)
-                        criteria.truncate_5_prime_end(peak, next_gene, utr)
+                        criteria.belongs_to_next_gene(peak, next_gene, self.args.five_prime_ext)
+                        criteria.truncate_5_prime_end(peak, next_gene, utr, self.args.five_prime_ext)
                 except criteria.CriteriaFailure as e:
                     logging.debug("%s - %s" % (type(e).__name__, e))
                 else:
@@ -182,7 +196,7 @@ class Annotations(collections.UserDict):
                             gene.end = transcript.end = utr.end
                         else:
                             gene.start = transcript.start = utr.start
-                        self.queue.put({gene.id: features})
+                        self.queue.put({transcript.id: features})
                         utr_found = True
         else:
             logging.debug("No features found near peak %s" % peak.name)
@@ -190,14 +204,3 @@ class Annotations(collections.UserDict):
             return
         if not utr_found:
             self.queue.put(None)
-
-
-def set_feature_range(feature, strand, five_prime_ext=0):
-    """
-    Assign a range to feature taking into account assumed 5' extension.
-    """
-    if strand == "+":
-        feature.start -= five_prime_ext
-    else:
-        feature.end += five_prime_ext
-    feature.range = range(feature.start, feature.end)
