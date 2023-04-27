@@ -7,6 +7,7 @@ import gffutils
 
 from .constants import CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
+from .models import Feature
 
 
 class Falsey:
@@ -157,7 +158,7 @@ def sum_nested_dicts(d1, d2):
 def feature_from_line(line, dialect_in, dialect_out):
     """
     Given a line from a GFF file, return a Feature object.
-    
+
     This adapts gffutils.feature.feature_from_line to allow an output dialect to
     be specified, in addition to the dialect used for parsing the feature string.
     """
@@ -171,4 +172,4 @@ def feature_from_line(line, dialect_in, dialect_out):
     d['attributes'] = attrs
     d['extra'] = fields[9:]
     d['keep_order'] = True
-    return gffutils.Feature(dialect=dialect_out, **d)
+    return Feature(dialect=dialect_out, **d)
