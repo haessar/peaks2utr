@@ -14,6 +14,10 @@ class RangeMixin(ABC):
     def range(self):
         return set(range(self.start, self.end))
 
+    @property
+    def length(self):
+        return self.end - self.start
+
 
 class Peak(RangeMixin):
     """

@@ -2,8 +2,61 @@ import collections
 import csv
 import json
 
-from .constants import STRAND_MAP
+import gffutils
+
+from . import constants
 from .models import Peak
+from .utils import feature_from_line
+
+
+class AnnotationsDict(collections.UserDict):
+    """
+    Dictionary of features per gene id.
+    """
+    def __init__(self, dict=None, args=None):
+        super().__init__(dict)
+        if args:
+            self.gtf_in = args.gtf_in
+            self.gtf_out = args.gtf_out
+
+    def __setitem__(self, gene, new_features):
+        existing_features = self.get(gene)
+        if existing_features:
+            if new_features["utr"].range.issubset(existing_features["utr"].range):
+                return
+        self.data[gene] = new_features
+
+    def iter_feature_strings(self):
+        for _, features in self.data.items():
+            yield '\n'.join([str(self._apply_feature_dialect(f)) for _, f in features.items()]) + '\n'
+
+    def _apply_feature_dialect(self, feature):
+        if self.gtf_in != self.gtf_out:
+            attrs = dict(feature.attributes)
+            # GTF in, GFF3 out
+            if not self.gtf_out and not (attrs.get('ID') and attrs.get('Parent')):
+                if not attrs.get('ID'):
+                    attrs['ID'] = [feature.id]
+                if not attrs.get('Parent') and feature.featuretype not in constants.FeatureTypes.Gene:
+                    attrs['Parent'] = attrs['gene_id'] if feature.featuretype in constants.FeatureTypes.Transcript else \
+                                      attrs['transcript_id']
+            # GFF3 in, GTF out
+            elif self.gtf_out and not (attrs.get('gene_id') and attrs.get('transcript_id')):
+                if feature.featuretype not in constants.FeatureTypes.Gene:
+                    if feature.featuretype in constants.FeatureTypes.Transcript:
+                        attrs['gene_id'] = attrs['Parent']
+                        attrs['transcript_id'] = [feature.id]
+                    else:
+                        attrs['transcript_id'] = attrs['Parent']
+                else:
+                    attrs['gene_id'] = [feature.id]
+
+            feature.attributes = gffutils.attributes.Attributes(**attrs)
+        return feature_from_line(
+            str(feature),
+            dialect_in=constants.GFFUTILS_GTF_DIALECT if self.gtf_in else constants.GFFUTILS_GFF_DIALECT,
+            dialect_out=constants.GFFUTILS_GTF_DIALECT if self.gtf_out else constants.GFFUTILS_GFF_DIALECT,
+        )
 
 
 class ZeroCoverageIntervalsDict(collections.UserDict):
@@ -59,4 +112,4 @@ class BroadPeaksList(collections.UserList):
             with open(broadpeak_fn, 'r') as f:
                 self.data = [Peak(*peak) for peak in csv.reader(f, delimiter="\t")]
                 for peak in self.data:
-                    peak.strand = STRAND_MAP.get(strand)
+                    peak.strand = constants.STRAND_MAP.get(strand)

@@ -1,81 +1,42 @@
-import collections
 import copy
 import logging
 import math
 import multiprocessing
 import sqlite3
 
-import gffutils
 from tqdm import tqdm
 
 from . import constants, criteria
 from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
+from .exceptions import AnnotationsError
 from .models import UTR, FeatureDB
-from .utils import cached, feature_from_line, iter_batches
+from .utils import Counter, Falsey, cached, iter_batches
 
 
-class NoNearbyFeatures:
+class NoNearbyFeatures(Falsey):
     pass
 
 
-class Annotations(collections.UserDict):
-    def __init__(self, peaks, args, queue=None):
+class PotentialUTRZeroCoverage(Falsey):
+    pass
+
+
+class AnnotationsPipeline:
+    def __init__(self, peaks, args, queue=None, db_path=None):
         super().__init__()
-        self.no_features_counter = 0
+        self.no_features_counter = Counter()
+        self.new_utr_counter = Counter()
+        self.zero_coverage_removal_counter = Counter()
         self.peaks = peaks
         self.total_peaks = len(peaks)
         self.args = args
         self.queue = queue or multiprocessing.Queue()
-
-    def __setitem__(self, gene, new_features):
-        existing_features = self.get(gene)
-        if existing_features:
-            if new_features["utr"].range.issubset(existing_features["utr"].range):
-                return
-        self.data[gene] = new_features
-
-    def __iter__(self):
-        for _, features in self.data.items():
-            yield '\n'.join([str(self._apply_feature_dialect(f)) for _, f in features.items()]) + '\n'
-
-    def _apply_feature_dialect(self, feature):
-        if self.args.gtf_in != self.args.gtf_out:
-            attrs = dict(feature.attributes)
-            # GTF in, GFF3 out
-            if not self.args.gtf_out and not (attrs.get('ID') and attrs.get('Parent')):
-                if not attrs.get('ID'):
-                    attrs['ID'] = [feature.id]
-                if not attrs.get('Parent') and feature.featuretype not in constants.FeatureTypes.Gene:
-                    attrs['Parent'] = attrs['gene_id'] if feature.featuretype in constants.FeatureTypes.Transcript else \
-                                      attrs['transcript_id']
-            # GFF3 in, GTF out
-            elif self.args.gtf_out and not (attrs.get('gene_id') and attrs.get('transcript_id')):
-                if feature.featuretype not in constants.FeatureTypes.Gene:
-                    if feature.featuretype in constants.FeatureTypes.Transcript:
-                        attrs['gene_id'] = attrs['Parent']
-                        attrs['transcript_id'] = [feature.id]
-                    else:
-                        attrs['transcript_id'] = attrs['Parent']
-                else:
-                    attrs['gene_id'] = [feature.id]
-
-            feature.attributes = gffutils.attributes.Attributes(**attrs)
-        return feature_from_line(
-            str(feature),
-            dialect_in=constants.GFFUTILS_GTF_DIALECT if self.args.gtf_in else constants.GFFUTILS_GFF_DIALECT,
-            dialect_out=constants.GFFUTILS_GTF_DIALECT if self.args.gtf_out else constants.GFFUTILS_GFF_DIALECT,
-        )
-
-    def __call__(self, db_path):
-        """
-        Args:
-            db_path (string): GFFUtils sqlite3 db file path.
-        """
         self.db_path = db_path
-        return self
 
     def __enter__(self):
+        if not self.db_path:
+            raise AnnotationsError("Please instantiate {} with db_path kwarg.".format(self.__class__.__name__))
         self.processes = [
             self._batch_annotate_strand(batch)
             for batch in iter_batches(self.peaks, math.ceil(self.total_peaks/self.args.processors))
@@ -130,6 +91,8 @@ class Annotations(collections.UserDict):
 
         Args:
             db (gffutils.interface.FeatureDB)
+            truncation_points (SPATTruncationPointsDict)
+            coverage_gaps (ZeroCoverageIntervalsDict)
         """
         utr_found = False
         genes = self._filter_db(db, peak.chr, peak.start, peak.end, peak.strand, constants.FeatureTypes.Gene) or []
@@ -197,11 +160,25 @@ class Annotations(collections.UserDict):
                             gene.end = transcript.end = utr.end
                         else:
                             gene.start = transcript.start = utr.start
-                        self.queue.put({transcript.id: features})
+                        self.queue.put({gene.id: features})
                         utr_found = True
+                        self.new_utr_counter.increment()
+                    else:
+                        if utr.length == 0:
+                            logging.debug(
+                                "Peak {} corresponds to potential 3' UTR that was removed due to zero read coverage."
+                                .format(peak.name))
+                            self.queue.put(PotentialUTRZeroCoverage())
+                            self.zero_coverage_removal_counter.add(peak.name)
+                        else:
+                            logging.error(
+                                "Peak {} produced abnormal 3' UTR {} for gene {}. "
+                                "This is a bug, please report at https://github.com/haessar/peaks2utr/issues."
+                                .format(peak.name, utr, gene.id))
         else:
             logging.debug("No features found near peak %s" % peak.name)
-            self.queue.put(NoNearbyFeatures)
+            self.queue.put(NoNearbyFeatures())
+            self.no_features_counter.add(peak.name)
             return
         if not utr_found:
             self.queue.put(None)

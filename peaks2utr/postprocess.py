@@ -11,20 +11,23 @@ from .models import FeatureDB
 from .utils import cached, format_stats_line
 
 
-def write_summary_stats(annotations):
-    total_peaks = annotations.total_peaks
+def write_summary_stats(annotations, pipeline):
+    total_peaks = pipeline.total_peaks
     with open('summary_stats.txt', 'w') as fstats:
         logging.info("Writing summary statistics file.")
         fstats.write(format_stats_line("Total peaks", total_peaks))
-        # TODO The following line is incorrect - needs to be made more robust
-        fstats.write(format_stats_line("Total 3' UTRs annotated", len([a for a in annotations if "utr" in a])))
-        fstats.write(format_stats_line("Peaks with no nearby features", total_peaks, annotations.no_features_counter))
-        fstats.write(format_stats_line("Peaks corresponding to an already annotated 3' UTR", total_peaks,
-                                       criteria.assert_whether_utr_already_annotated.fails.value))
-        fstats.write(format_stats_line("Peaks contained within a feature", total_peaks,
-                                       criteria.assert_not_a_subset.fails.value))
-        fstats.write(format_stats_line("Peaks corresponding to 5'-end of a feature", total_peaks,
-                                       criteria.assert_3_prime_end_and_truncate.fails.value))
+        fstats.write(format_stats_line("\t...with no nearby features", total_peaks, int(pipeline.no_features_counter)))
+        fstats.write(format_stats_line("\t...corresponding to an already annotated 3' UTR", total_peaks,
+                                       int(criteria.assert_whether_utr_already_annotated.fails)))
+        fstats.write(format_stats_line("\t...contained within a feature", total_peaks,
+                                       int(criteria.assert_not_a_subset.fails)))
+        fstats.write(format_stats_line("\t...corresponding to 5'-end of a feature", total_peaks,
+                                       int(criteria.assert_3_prime_end_and_truncate.fails)))
+        fstats.write(format_stats_line("\t...corresponding to potential 3' UTR removed due to zero read coverage",
+                                       total_peaks, int(pipeline.zero_coverage_removal_counter)))
+        fstats.write(format_stats_line("Total 3' UTRs", len([vv for v in annotations.values() for vv in v.values()
+                                                             if vv.featuretype in FeatureTypes.ThreePrimeUTR])))
+        fstats.write(format_stats_line("\t...annotated by {}".format(__package__), int(pipeline.new_utr_counter)))
 
 
 def merge_annotations(db, annotations):
@@ -49,7 +52,7 @@ def gt_gff3_sort(annotations, new_gff_fn, force=False, gtf_out=False):
     """
     log_fn = "gt_gff3.log"
     with open(cached(TMP_GFF_FN), 'w') as fout:
-        fout.writelines(annotations)
+        fout.writelines(annotations.iter_feature_strings())
     if not gtf_out:
         command = "gt gff3 -sort -retainids -tidy -o {} ".format(new_gff_fn)
         if force:

@@ -9,6 +9,12 @@ from .constants import CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
 
 
+class Falsey:
+
+    def __bool__(self):
+        return False
+
+
 class Counter:
     seen = set()
 
@@ -16,11 +22,24 @@ class Counter:
         self.val = multiprocessing.Value('i', 0)
         self.lock = multiprocessing.Lock()
 
-    def add(self, peak):
-        if peak not in self.seen:
+    def __int__(self):
+        return self.value
+
+    def add(self, key):
+        """
+        Add key to global seen set. This Counter will only increment if key is not a duplicate in _any_ Counter.
+        """
+        if key not in self.seen:
             with self.lock:
                 self.val.value += 1
-                self.seen.add(peak)
+                self.seen.add(key)
+
+    def increment(self):
+        """
+        Increment this Counter in any circumstance.
+        """
+        with self.lock:
+            self.val.value += 1
 
     @property
     def value(self):

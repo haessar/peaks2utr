@@ -1,3 +1,7 @@
+class AnnotationsError(Exception):
+    pass
+
+
 class PybedtoolsError(Exception):
     pass
 

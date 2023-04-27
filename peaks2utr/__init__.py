@@ -87,8 +87,8 @@ async def _main(args):
     import sys
 
     from . import constants
-    from .annotations import Annotations, NoNearbyFeatures
-    from .collections import BroadPeaksList
+    from .annotations import AnnotationsPipeline
+    from .collections import AnnotationsDict, BroadPeaksList
     from .utils import cached, yield_from_process
     from .preprocess import BAMSplitter, call_peaks, create_db
     from .postprocess import merge_annotations, gt_gff3_sort, write_summary_stats
@@ -136,6 +136,7 @@ async def _main(args):
             new_gff_fn += ".gtf" if args.gtf_out else ".gff3"
         else:
             new_gff_fn = args.output
+
         ###################
         # Perform checks  #
         ###################
@@ -167,15 +168,12 @@ async def _main(args):
         # Process peaks   #
         ###################
 
-        annotations = Annotations(peaks, args)
-        with annotations(db) as pipeline:
+        annotations = AnnotationsDict(args=args)
+        with AnnotationsPipeline(peaks, args, db_path=db) as pipeline:
             for p in pipeline.processes:
                 for result in yield_from_process(pipeline.queue, p, pipeline.pbar):
                     if result:
-                        if result is NoNearbyFeatures:
-                            annotations.no_features_counter += 1
-                        else:
-                            annotations.update(result)
+                        annotations.update(result)
 
         ###################
         # Post-processing #
@@ -183,7 +181,7 @@ async def _main(args):
 
         merge_annotations(db, annotations)
         gt_gff3_sort(annotations, new_gff_fn, args.force, args.gtf_out)
-        write_summary_stats(annotations)
+        write_summary_stats(annotations, pipeline)
 
         logging.info("%s finished successfully." % __package__)
         await asyncio.sleep(1)
