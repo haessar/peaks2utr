@@ -3,14 +3,14 @@ import os.path
 
 
 class AnnotationColour:
-    artemis_colour_map = {
+    _artemis_colour_map = {
         "magenta": "6",
         "green": "3",
         "blue": "4",
     }
-    Extended = artemis_colour_map["green"]
-    ExtendedWithSPAT = artemis_colour_map["blue"]
-    TruncatedZeroCoverage = artemis_colour_map["magenta"]
+    Extended = _artemis_colour_map["green"]
+    ExtendedWithSPAT = _artemis_colour_map["blue"]
+    TruncatedZeroCoverage = _artemis_colour_map["magenta"]
 
 
 class FeatureTypes:
