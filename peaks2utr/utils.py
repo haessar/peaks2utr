@@ -86,7 +86,7 @@ def format_stats_line(msg, total, numerator=None):
     if numerator is None:
         msg += "{}\n".format(total)
     else:
-        msg += "{} ({}%)\n".format(numerator, int(100 * numerator / total))
+        msg += "{} ({}%)\n".format(numerator, round(100 * numerator / total))
     return msg
 
 
