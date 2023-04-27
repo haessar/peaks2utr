@@ -125,7 +125,7 @@ def limit_memory(maxsize):
 
 def filter_nested_dict(node, threshold):
     """
-    For an n-nested dictionary, filter out integer leaves with a minimum threashold value.
+    For an n-nested dictionary, filter out integer leaves with a minimum threshold value.
     """
     if isinstance(node, int):
         if node >= threshold:
