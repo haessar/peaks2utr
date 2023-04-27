@@ -41,7 +41,7 @@ def merge_annotations(db, annotations):
     for gene in db.all_features(featuretype=FeatureTypes.Gene):
         if gene.id not in annotations:
             features = {"gene": gene}
-            features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(gene)))
+            features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(gene))
                              if f.id != gene.id})
             annotations[gene.id] = features
 

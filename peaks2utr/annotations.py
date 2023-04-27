@@ -153,7 +153,7 @@ class AnnotationsPipeline:
                         logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                         utr.generate_feature(gene, transcript, db, colour, self.args.gtf_in, self.args.gtf_out)
                         features = {"gene": gene, "transcript": transcript}
-                        features.update({"feature_{}".format(idx): f for idx, f in enumerate(list(db.children(transcript)))
+                        features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(transcript))
                                         if f.id != transcript.id and f.id != gene.id})
                         features.update({"utr": utr.feature})
                         if peak.strand == "+":
