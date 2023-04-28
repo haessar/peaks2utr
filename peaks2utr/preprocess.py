@@ -28,6 +28,7 @@ class BAMSplitter:
         if not self.args.skip_soft_clip:
             self.split_read_groups()
             self.pileup_soft_clipped_reads()
+        # TODO make this an optional step as it's a bit of a bottleneck for little gain.
         self.find_zero_coverage_intervals()
 
     def split_strands(self):
@@ -155,7 +156,7 @@ async def create_db(gff_in):
     if not os.path.isfile(gff_db):
         logging.info('Creating gff db.')
         await sync_to_async(gffutils.create_db)(
-            gff_in, gff_db, force=True, verbose=True, disable_infer_genes=True, disable_infer_transcripts=True)
+            gff_in, gff_db, force=True, verbose=True)
         logging.info('Finished creating gff db.')
     else:
         logging.info("Using cached gff db.")

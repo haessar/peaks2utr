@@ -42,6 +42,7 @@ def prepare_argparser():
     parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
     parser.add_argument('-o', '--output', help="output filename.")
+    parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3).")
     parser.add_argument('--keep-cache', action="store_true", help="Keep cached files on run completion.")
     parser.add_argument('--version', action='version',
                         version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
@@ -82,17 +83,13 @@ async def _main(args):
     The main function / pipeline for peaks2utr.
     """
     import logging
-    import math
-    import multiprocessing
     import shutil
     import sys
 
-    from tqdm import tqdm
-
     from . import constants
-    from .annotations import Annotations, NoNearbyFeatures, batch_annotate_strand
-    from .collections import BroadPeaksList
-    from .utils import cached, iter_batches, yield_from_process
+    from .annotations import AnnotationsPipeline
+    from .collections import AnnotationsDict, BroadPeaksList
+    from .utils import cached, yield_from_process
     from .preprocess import BAMSplitter, call_peaks, create_db
     from .postprocess import merge_annotations, gt_gff3_sort, write_summary_stats
 
@@ -130,9 +127,15 @@ async def _main(args):
             logging.info("Make .cache directory")
             os.mkdir(constants.CACHE_DIR)
 
-        gff_basename = os.path.basename(os.path.splitext(args.GFF_IN)[0])
-        new_gff_fn = gff_basename + ".new.gff" if not args.output else args.output
         bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
+        gff_base, gff_ext = os.path.splitext(args.GFF_IN)
+        gff_basename = os.path.basename(gff_base)
+        args.gtf_in = True if "gtf" in gff_ext else False
+        if not args.output:
+            new_gff_fn = gff_basename + ".new"
+            new_gff_fn += ".gtf" if args.gtf_out else ".gff3"
+        else:
+            new_gff_fn = args.output
 
         ###################
         # Perform checks  #
@@ -160,37 +163,25 @@ async def _main(args):
         peaks = \
             BroadPeaksList(broadpeak_fn=cached("forward_peaks.broadPeak"), strand="forward") + \
             BroadPeaksList(broadpeak_fn=cached("reverse_peaks.broadPeak"), strand="reverse")
-        total_peaks = len(peaks)
 
         ###################
         # Process peaks   #
         ###################
 
-        queue = multiprocessing.Queue()
-        processes = [
-            batch_annotate_strand(db, batch, queue, args)
-            for batch in iter_batches(peaks, math.ceil(total_peaks/args.processors))
-        ]
-        for p in processes:
-            p.start()
-
-        annotations = Annotations()
-        with tqdm(total=total_peaks, desc=f'{"INFO": <8} Iterating over peaks to annotate 3\' UTRs.') as pbar:
-            for p in processes:
-                for result in yield_from_process(queue, p, pbar):
+        annotations = AnnotationsDict(args=args)
+        with AnnotationsPipeline(peaks, args, db_path=db) as pipeline:
+            for p in pipeline.processes:
+                for result in yield_from_process(pipeline.queue, p, pipeline.pbar):
                     if result:
-                        if result is NoNearbyFeatures:
-                            annotations.no_features_counter += 1
-                        else:
-                            annotations.update(result)
+                        annotations.update(result)
 
         ###################
         # Post-processing #
         ###################
 
         merge_annotations(db, annotations)
-        gt_gff3_sort(annotations, new_gff_fn, args.force)
-        write_summary_stats(annotations, total_peaks)
+        gt_gff3_sort(annotations, new_gff_fn, args.force, args.gtf_out)
+        write_summary_stats(annotations, pipeline)
 
         logging.info("%s finished successfully." % __package__)
         await asyncio.sleep(1)

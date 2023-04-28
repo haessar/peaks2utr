@@ -3,7 +3,7 @@ import re
 
 import gffutils
 
-from .constants import AnnotationColour, STRAND_CIGAR_SOFT_CLIP_REGEX
+from .constants import AnnotationColour, FeatureTypes, STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GFF_DIALECT, GFFUTILS_GTF_DIALECT
 
 
 class RangeMixin(ABC):
@@ -13,6 +13,10 @@ class RangeMixin(ABC):
     @property
     def range(self):
         return set(range(self.start, self.end))
+
+    @property
+    def length(self):
+        return self.end - self.start
 
 
 class Peak(RangeMixin):
@@ -34,56 +38,81 @@ class Peak(RangeMixin):
         return "<%s: %s>" % (self.__class__.__name__, str(self.__dict__))
 
 
+class Feature(gffutils.Feature, RangeMixin):
+    """
+    gffutils.Feature with range property
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.keep_order = True
+
+
+class FeatureDB(gffutils.FeatureDB):
+    def _feature_returner(self, **kwargs):
+        """
+        Overwrite the gffutils.FeatureDB._feature_returner method to "slot in" Feature with added range property
+        """
+        kwargs.setdefault('dialect', self.dialect)
+        kwargs.setdefault('keep_order', self.keep_order)
+        kwargs.setdefault('sort_attribute_values', self.sort_attribute_values)
+        return Feature(**kwargs)
+
+
 class UTR(RangeMixin):
     def __init__(self, start, end):
         self.start = start
         self.end = end
         self.feature = None
 
+    def __str__(self):
+        return str(self.feature) if self.feature else super().__str__()
+
     def __repr__(self):
         if self.feature:
             return self.feature.__repr__()
         return "<%s: (%s, %s)>" % (self.__class__.__name__, self.start, self.end)
 
-    def __str__(self):
-        if self.feature:
-            return self.feature.__str__()
-        return super().__str__()
-
     def __eq__(self, other):
         return self.range == other.range
 
-    def _get_id(self, gene, db):
-        existing_utrs = list(db.children(gene, featuretype=['three_prime_UTR', 'three_prime_utr'])) + \
-                        list(db.children(gene, featuretype=['five_prime_UTR', 'five_prime_utr']))
+    def _create_id(self, transcript, db):
+        existing_utrs = list(db.children(transcript, featuretype=FeatureTypes.ThreePrimeUTR)) + \
+                        list(db.children(transcript, featuretype=FeatureTypes.FivePrimeUTR))
         if existing_utrs:
             max_utr = sorted([utr.id for utr in existing_utrs], reverse=True)[0]
             max_idx = int(max_utr[-1])
             max_utr_basename = max_utr[:-1]
             return max_utr_basename + str(max_idx + 1)
         else:
-            return "utr_" + gene.id + ":mRNA_1"
+            return "utr_" + transcript.id + "_1"
 
-    def generate_feature(self, gene, db, colour=AnnotationColour.Extended):
+    def generate_feature(self, gene, transcript, db, colour=AnnotationColour.Extended, gtf_in=False):
         """
         Generate three_prime_UTR feature in gff3 format.
         """
-        attrs = dict(gene.attributes)
-        attrs.pop('ID', None)
-        attrs["ID"] = [self._get_id(gene, db)]
-        attrs['Parent'] = [gene.id]
-        attrs['colour'] = [colour]
-        self.feature = gffutils.Feature(
-            seqid=gene.chrom,
-            source=__package__,
-            featuretype="three_prime_UTR",
-            start=self.start,
-            end=self.end,
-            score='.',
-            strand=gene.strand,
-            frame='.',
-            attributes=attrs
-        )
+        d = {
+            "seqid": transcript.chrom,
+            "source": __package__,
+            "featuretype": FeatureTypes.ThreePrimeUTR[0],
+            "start": self.start,
+            "end": self.end,
+            "score": '.',
+            "strand": transcript.strand,
+            "frame": '.',
+            "dialect": GFFUTILS_GTF_DIALECT if gtf_in else GFFUTILS_GFF_DIALECT,
+        }
+        attrs = {}
+        id = self._create_id(transcript, db)
+        if gtf_in:
+            attrs["gene_id"] = [gene.id]
+            attrs["transcript_id"] = [transcript.id]
+        else:
+            attrs["ID"] = [id]
+            attrs["Parent"] = [transcript.id]
+        attrs.update({'colour': [colour]})
+        d.update({"attributes": attrs})
+
+        self.feature = Feature(id=id, **d)
 
     def is_valid(self):
         return self.end > self.start

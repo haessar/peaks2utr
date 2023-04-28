@@ -7,6 +7,12 @@ from .constants import CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
 
 
+class Falsey:
+
+    def __bool__(self):
+        return False
+
+
 class Counter:
     seen = set()
 
@@ -14,11 +20,24 @@ class Counter:
         self.val = multiprocessing.Value('i', 0)
         self.lock = multiprocessing.Lock()
 
-    def add(self, peak):
-        if peak not in self.seen:
+    def __int__(self):
+        return self.value
+
+    def add(self, key):
+        """
+        Add key to global seen set. This Counter will only increment if key is not a duplicate in _any_ Counter.
+        """
+        if key not in self.seen:
             with self.lock:
                 self.val.value += 1
-                self.seen.add(peak)
+                self.seen.add(key)
+
+    def increment(self):
+        """
+        Increment this Counter in any circumstance.
+        """
+        with self.lock:
+            self.val.value += 1
 
     @property
     def value(self):
@@ -64,7 +83,7 @@ def format_stats_line(msg, total, numerator=None):
     if numerator is None:
         msg += "{}\n".format(total)
     else:
-        msg += "{} ({}%)\n".format(numerator, int(100 * numerator / total))
+        msg += "{} ({}%)\n".format(numerator, round(100 * numerator / total))
     return msg
 
 
@@ -103,7 +122,7 @@ def limit_memory(maxsize):
 
 def filter_nested_dict(node, threshold):
     """
-    For an n-nested dictionary, filter out integer leaves with a minimum threashold value.
+    For an n-nested dictionary, filter out integer leaves with a minimum threshold value.
     """
     if isinstance(node, int):
         if node >= threshold:
