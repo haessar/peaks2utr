@@ -42,7 +42,9 @@ class Feature(gffutils.Feature, RangeMixin):
     """
     gffutils.Feature with range property
     """
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.keep_order = True
 
 
 class FeatureDB(gffutils.FeatureDB):
@@ -84,7 +86,7 @@ class UTR(RangeMixin):
         else:
             return "utr_" + transcript.id + "_1"
 
-    def generate_feature(self, gene, transcript, db, colour=AnnotationColour.Extended, gtf_in=False, gtf_out=False):
+    def generate_feature(self, gene, transcript, db, colour=AnnotationColour.Extended, gtf_in=False):
         """
         Generate three_prime_UTR feature in gff3 format.
         """
@@ -101,7 +103,7 @@ class UTR(RangeMixin):
         }
         attrs = {}
         id = self._create_id(transcript, db)
-        if gtf_out:
+        if gtf_in:
             attrs["gene_id"] = [gene.id]
             attrs["transcript_id"] = [transcript.id]
         else:

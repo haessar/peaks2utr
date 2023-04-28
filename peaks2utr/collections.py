@@ -6,7 +6,6 @@ import gffutils
 
 from . import constants
 from .models import Peak
-from .utils import feature_from_line
 
 
 class AnnotationsDict(collections.UserDict):
@@ -27,36 +26,54 @@ class AnnotationsDict(collections.UserDict):
         self.data[gene] = new_features
 
     def iter_feature_strings(self):
-        for _, features in self.data.items():
-            yield '\n'.join([str(self._apply_feature_dialect(f)) for _, f in features.items()]) + '\n'
+        for gid, features in self.data.items():
+            for _, f in features.items():
+                # gene features are redundant in GTF output
+                if self.gtf_out and f.featuretype in constants.FeatureTypes.Gene:
+                    continue
+                yield str(self._apply_feature_dialect(f, gid)) + '\n'
 
-    def _apply_feature_dialect(self, feature):
+    @staticmethod
+    def _apply_gff_dialect(feature, attrs):
+        feature.dialect = constants.GFFUTILS_GFF_DIALECT
+        if feature.featuretype not in constants.FeatureTypes.Gene:
+            if feature.featuretype in constants.FeatureTypes.GtfTranscript:
+                attrs['Parent'] = attrs.pop('gene_id')
+                attrs['ID'] = attrs.pop('transcript_id')
+                feature.featuretype = constants.FeatureTypes.GffTranscript[0]
+            else:
+                attrs.pop('gene_id')
+                attrs['Parent'] = attrs.pop('transcript_id')
+                attrs['ID'] = [feature.id]
+        else:
+            attrs['ID'] = attrs.pop('gene_id')
+
+    @staticmethod
+    def _apply_gtf_dialect(feature, attrs, gene_id=None):
+        feature.dialect = constants.GFFUTILS_GTF_DIALECT
+        if feature.featuretype not in constants.FeatureTypes.Gene:
+            if feature.featuretype in constants.FeatureTypes.GffTranscript:
+                attrs['gene_id'] = attrs.pop('Parent')
+                attrs['transcript_id'] = attrs.pop('ID')
+                feature.featuretype = constants.FeatureTypes.GtfTranscript[0]
+            else:
+                attrs['gene_id'] = gene_id
+                attrs['transcript_id'] = attrs.pop('Parent')
+                attrs.pop('ID')
+        else:
+            attrs['gene_id'] = attrs.pop('ID')
+
+    def _apply_feature_dialect(self, feature, gene_id):
         if self.gtf_in != self.gtf_out:
             attrs = dict(feature.attributes)
             # GTF in, GFF3 out
             if not self.gtf_out and not (attrs.get('ID') and attrs.get('Parent')):
-                if not attrs.get('ID'):
-                    attrs['ID'] = [feature.id]
-                if not attrs.get('Parent') and feature.featuretype not in constants.FeatureTypes.Gene:
-                    attrs['Parent'] = attrs['gene_id'] if feature.featuretype in constants.FeatureTypes.Transcript else \
-                                      attrs['transcript_id']
+                self._apply_gff_dialect(feature, attrs)
             # GFF3 in, GTF out
             elif self.gtf_out and not (attrs.get('gene_id') and attrs.get('transcript_id')):
-                if feature.featuretype not in constants.FeatureTypes.Gene:
-                    if feature.featuretype in constants.FeatureTypes.Transcript:
-                        attrs['gene_id'] = attrs['Parent']
-                        attrs['transcript_id'] = [feature.id]
-                    else:
-                        attrs['transcript_id'] = attrs['Parent']
-                else:
-                    attrs['gene_id'] = [feature.id]
-
+                self._apply_gtf_dialect(feature, attrs, gene_id)
             feature.attributes = gffutils.attributes.Attributes(**attrs)
-        return feature_from_line(
-            str(feature),
-            dialect_in=constants.GFFUTILS_GTF_DIALECT if self.gtf_in else constants.GFFUTILS_GFF_DIALECT,
-            dialect_out=constants.GFFUTILS_GTF_DIALECT if self.gtf_out else constants.GFFUTILS_GFF_DIALECT,
-        )
+        return feature
 
 
 class ZeroCoverageIntervalsDict(collections.UserDict):

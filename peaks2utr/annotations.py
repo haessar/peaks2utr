@@ -100,7 +100,7 @@ class AnnotationsPipeline:
             for idx, gene in enumerate(genes):
                 transcripts = db.children(
                     gene,
-                    featuretype=constants.FeatureTypes.Transcript,
+                    featuretype=constants.FeatureTypes.GffTranscript + constants.FeatureTypes.GtfTranscript,
                     order_by="end" if peak.strand == "+" else "start",
                     reverse=True if peak.strand == "+" else False
                 )
@@ -151,7 +151,7 @@ class AnnotationsPipeline:
                         colour = AnnotationColour.ExtendedWithSPAT
                     if utr.is_valid():
                         logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
-                        utr.generate_feature(gene, transcript, db, colour, self.args.gtf_in, self.args.gtf_out)
+                        utr.generate_feature(gene, transcript, db, colour, self.args.gtf_in)
                         features = {"gene": gene, "transcript": transcript}
                         features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(transcript))
                                         if f.id != transcript.id and f.id != gene.id})

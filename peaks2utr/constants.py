@@ -17,7 +17,8 @@ class FeatureTypes:
     Gene = ['gene', 'protein_coding_gene']
     FivePrimeUTR = ['five_prime_UTR', 'five_prime_utr']
     ThreePrimeUTR = ['three_prime_UTR', 'three_prime_utr']
-    Transcript = ['mRNA', 'transcript']
+    GffTranscript = ['mRNA']
+    GtfTranscript = ['transcript']
 
 
 STRAND_MAP = {
@@ -44,7 +45,7 @@ GFFUTILS_GTF_DIALECT = {
     'multival separator': ',',
     'fmt': 'gtf',
     'repeated keys': False,
-    'order': ['gene_id', 'transcript_id', 'ID', 'Name'],
+    'order': ['gene_id', 'transcript_id', 'colour']
 }
 
 GFFUTILS_GFF_DIALECT = {
@@ -56,7 +57,7 @@ GFFUTILS_GFF_DIALECT = {
     'multival separator': ',',
     'fmt': 'gff3',
     'repeated keys': False,
-    'order': ['ID', 'Name', 'gene_id', 'transcript_id']
+    'order': ['ID', 'Parent', 'colour']
 }
 
 CACHE_DIR = os.path.join(os.getcwd(), '.cache')
