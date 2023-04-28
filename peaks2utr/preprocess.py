@@ -28,6 +28,7 @@ class BAMSplitter:
         if not self.args.skip_soft_clip:
             self.split_read_groups()
             self.pileup_soft_clipped_reads()
+        # TODO make this an optional step as it's a bit of a bottleneck for little gain.
         self.find_zero_coverage_intervals()
 
     def split_strands(self):
