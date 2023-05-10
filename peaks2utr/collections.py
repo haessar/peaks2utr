@@ -31,7 +31,12 @@ class AnnotationsDict(collections.UserDict):
                 # gene features are redundant in GTF output
                 if self.gtf_out and f.featuretype in constants.FeatureTypes.Gene:
                     continue
-                yield str(self._apply_feature_dialect(f, gid)) + '\n'
+                formatted_f = self._apply_feature_dialect(f, gid)
+                yield str(formatted_f) + '\n'
+                # exon matching three_prime_UTR for GTF output
+                if self.gtf_out and f.source == __package__ and f.featuretype in constants.FeatureTypes.ThreePrimeUTR:
+                    formatted_f.featuretype = constants.FeatureTypes.Exon[0]
+                    yield str(formatted_f) + '\n'
 
     @staticmethod
     def _apply_gff_dialect(feature, attrs):

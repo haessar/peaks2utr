@@ -55,14 +55,16 @@ class TestOutputFormatting(unittest.TestCase):
                                'gene_id "gene1"; transcript_id "gene1:mRNA";']
         expected_utr = ["chr1", "peaks2utr", "three_prime_UTR", "1000", "2000", ".", "+", ".",
                         'gene_id "gene1"; transcript_id "gene1:mRNA"; colour "3";']
+        expected_exon = expected_utr[:2] + ['exon'] + expected_utr[3:]
         self.utr.generate_feature(self.gene_gff, self.transcript_gff, self.db, gtf_in=self.args.gtf_in)
         annotations = AnnotationsDict(args=self.args)
         annotations.update({
             self.gene_gff.id: {"gene": self.gene_gff, "transcript": self.transcript_gff, "utr": self.utr.feature}
         })
-        transcript, utr = annotations.iter_feature_strings()
+        transcript, utr, exon = annotations.iter_feature_strings()
         self.assertListEqual(transcript.strip().split("\t"), expected_transcript)
         self.assertListEqual(utr.strip().split("\t"), expected_utr)
+        self.assertListEqual(exon.strip().split("\t"), expected_exon)
 
     def test_gtf_to_gff(self):
         self.args.gtf_in = True
@@ -88,14 +90,16 @@ class TestOutputFormatting(unittest.TestCase):
                                'gene_id "gene1"; transcript_id "gene1.1";']
         expected_utr = ["chr1", "peaks2utr", "three_prime_UTR", "1000", "2000", ".", "+", ".",
                         'gene_id "gene1"; transcript_id "gene1.1"; colour "3";']
+        expected_exon = expected_utr[:2] + ['exon'] + expected_utr[3:]
         self.utr.generate_feature(self.gene_gtf, self.transcript_gtf, self.db, gtf_in=self.args.gtf_in)
         annotations = AnnotationsDict(args=self.args)
         annotations.update({
             self.gene_gtf.id: {"gene": self.gene_gtf, "transcript": self.transcript_gtf, "utr": self.utr.feature}
         })
-        transcript, utr = annotations.iter_feature_strings()
+        transcript, utr, exon = annotations.iter_feature_strings()
         self.assertListEqual(transcript.strip().split("\t"), expected_transcript)
         self.assertListEqual(utr.strip().split("\t"), expected_utr)
+        self.assertListEqual(exon.strip().split("\t"), expected_exon)
 
 
 if __name__ == '__main__':
