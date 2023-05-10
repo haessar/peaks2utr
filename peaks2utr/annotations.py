@@ -1,4 +1,3 @@
-import copy
 import logging
 import math
 import multiprocessing
@@ -115,10 +114,13 @@ class AnnotationsPipeline:
                     criteria.assert_not_a_subset(peak, transcript)
                     utr = UTR(start=peak.start, end=peak.end)
                     criteria.assert_3_prime_end_and_truncate(peak, transcript, utr)
-                    if len(genes) > idx + 1:
-                        next_gene = copy.deepcopy(genes[idx + 1])
-                        criteria.belongs_to_next_gene(peak, next_gene, self.args.five_prime_ext)
-                        criteria.truncate_5_prime_end(peak, next_gene, utr, self.args.five_prime_ext)
+                    if len(genes) > 1:
+                        next_gene_idx = idx + 1
+                        next_gene = genes[next_gene_idx % len(genes)]
+                        while next_gene != gene:
+                            criteria.truncate_to_following_exon(peak, next_gene, utr, db, self.args.five_prime_ext)
+                            next_gene_idx += 1
+                            next_gene = genes[next_gene_idx % len(genes)]
                 except criteria.CriteriaFailure as e:
                     logging.debug("%s - %s" % (type(e).__name__, e))
                 else:

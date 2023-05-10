@@ -150,3 +150,11 @@ def sum_nested_dicts(d1, d2):
     result = d2.copy()
     result.update({k: sum(v, d2.get(k)) for k, v in d1.items()})
     return result
+
+
+def gene_exons(db, gene):
+    exons = []
+    for child in db.children(gene):
+        if not list(db.children(child)):
+            exons.append(child)
+    return exons
