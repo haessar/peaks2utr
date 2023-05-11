@@ -10,7 +10,7 @@ from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
 from .exceptions import AnnotationsError
 from .models import UTR, FeatureDB
-from .utils import Counter, Falsey, cached, iter_batches
+from .utils import Counter, Falsey, cached, iter_batches, list_gene_children
 
 
 class NoNearbyFeatures(Falsey):
@@ -111,14 +111,17 @@ class AnnotationsPipeline:
                 try:
                     criteria.assert_whether_utr_already_annotated(peak, transcript, db,
                                                                   self.args.override_utr, self.args.extend_utr)
-                    criteria.assert_not_a_subset(peak, transcript)
+                    criteria.assert_peak_not_a_subset_of_transcript(peak, transcript)
                     utr = UTR(start=peak.start, end=peak.end)
                     criteria.assert_3_prime_end_and_truncate(peak, transcript, utr)
                     if len(genes) > 1:
                         next_gene_idx = idx + 1
                         next_gene = genes[next_gene_idx % len(genes)]
                         while next_gene != gene:
-                            criteria.truncate_to_following_exon(peak, next_gene, utr, db, self.args.five_prime_ext)
+                            for exon in list_gene_children(db, next_gene, constants.FeatureTypes.Exon):
+                                criteria.assert_transcript_not_a_subset_of_exon(transcript, exon, next_gene)
+                                criteria.truncate_to_following_exon(peak, transcript, utr, exon, next_gene,
+                                                                    self.args.five_prime_ext)
                             next_gene_idx += 1
                             next_gene = genes[next_gene_idx % len(genes)]
                 except criteria.CriteriaFailure as e:

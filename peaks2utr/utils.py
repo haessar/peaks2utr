@@ -152,9 +152,12 @@ def sum_nested_dicts(d1, d2):
     return result
 
 
-def gene_exons(db, gene):
-    exons = []
+def list_gene_children(db, gene, featuretype):
+    """
+    Return list of all features of given featuretype belonging to gene
+    """
+    features = []
     for child in db.children(gene):
-        if not list(db.children(child)):
-            exons.append(child)
-    return exons
+        if child.featuretype in featuretype:
+            features.append(child)
+    return features
