@@ -10,7 +10,7 @@ from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
 from .exceptions import AnnotationsError
 from .models import UTR, FeatureDB
-from .utils import Counter, Falsey, cached, iter_batches, list_gene_children
+from .utils import Counter, Falsey, cached, iter_batches, iter_gene_children
 
 
 class NoNearbyFeatures(Falsey):
@@ -118,7 +118,7 @@ class AnnotationsPipeline:
                         next_gene_idx = idx + 1
                         next_gene = genes[next_gene_idx % len(genes)]
                         while next_gene != gene:
-                            for exon in list_gene_children(db, next_gene, constants.FeatureTypes.Exon):
+                            for exon in iter_gene_children(db, next_gene, constants.FeatureTypes.Exon):
                                 criteria.assert_transcript_not_a_subset_of_exon(transcript, exon, next_gene)
                                 criteria.truncate_to_following_exon(peak, transcript, utr, exon, next_gene,
                                                                     self.args.five_prime_ext)
