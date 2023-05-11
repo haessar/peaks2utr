@@ -27,7 +27,7 @@ class TestCase1(unittest.TestCase):
     def tearDown(self):
         os.remove(os.path.join(TEST_DIR, "case1.db"))
 
-    def test_intron_gene_truncation(self):
+    def test_intronic_gene_truncation(self):
         expected_annotations = {
             "ENSMUSG00000087590": UTR(33795986, 33796107),
             "ENSMUSG00000092819": UTR(33795295, 33795382)
