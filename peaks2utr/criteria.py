@@ -37,9 +37,9 @@ def assert_whether_utr_already_annotated(peak, transcript, db, override_utr, ext
             min_start = min(utr.start for utr in existing_utrs)
             max_end = max(utr.end for utr in existing_utrs)
             if transcript.strand == "+":
-                transcript.end = min_start if override_utr else max_end
+                transcript.end = min_start - 1 if override_utr else max_end
             else:
-                transcript.start = max_end if override_utr else min_start
+                transcript.start = max_end + 1 if override_utr else min_start
         else:
             raise CriteriaFailure("3' UTR already annotated for transcript %s near peak %s" % (transcript.id, peak.name))
 
