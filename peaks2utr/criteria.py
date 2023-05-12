@@ -73,9 +73,9 @@ def assert_3_prime_end_and_truncate(peak, transcript, utr):
     it must correspond to the 5'-end of the transcript.
     """
     if peak.strand == "+" and peak.end > transcript.end:
-        utr.start = transcript.end
+        utr.start = transcript.end + 1
     elif peak.strand == "-" and peak.start < transcript.start:
-        utr.end = transcript.start
+        utr.end = transcript.start - 1
     else:
         raise CriteriaFailure("Peak %s corresponds to 5'-end of transcript %s" % (peak.name, transcript.id))
 
@@ -88,6 +88,6 @@ def truncate_to_following_exon(peak, transcript, utr, exon, gene, five_prime_ext
     if utr.range.intersection(exon.range):
         logging.debug("Peak %s overlapping exon %s of gene %s: Truncating" % (peak.name, exon.id, gene.id))
         if peak.strand == "+" and exon.start > transcript.end:
-            utr.end = exon.start - five_prime_ext
+            utr.end = exon.start - 1 - five_prime_ext
         elif peak.strand == "-" and exon.end < transcript.start:
-            utr.start = exon.end + five_prime_ext
+            utr.start = exon.end + 1 + five_prime_ext

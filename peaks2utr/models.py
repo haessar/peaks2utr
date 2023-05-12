@@ -6,6 +6,9 @@ from .constants import AnnotationColour, FeatureTypes, STRAND_CIGAR_SOFT_CLIP_RE
 
 
 class RangeMixin:
+    """
+    Like gff/gtf this class is 1-based included
+    """
     start: int
     end: int
 
@@ -15,16 +18,17 @@ class RangeMixin:
 
     @property
     def length(self):
-        return self.end - self.start
+        return self.end - self.start + 1
 
 
 class Peak(RangeMixin):
     """
-    MACS3 peak in BED 6+3 format.
+    MACS3 peak in BED 6+3 format but 1-based included
+    init from 0-based half-opened = BED6+3
     """
     def __init__(self, *args):
         self.chr = str(args[0])
-        self.start = int(args[1])
+        self.start = int(args[1]) + 1
         self.end = int(args[2])
         self.name = str(args[3])
         self.score = int(args[4])
@@ -114,16 +118,17 @@ class UTR(RangeMixin):
         self.feature = Feature(id=id, **d)
 
     def is_valid(self):
-        return self.end > self.start
+        return self.end >= self.start
 
 
 class SoftClippedRead:
     """
-    Read in SAM file format.
+    Read in SAM file format and store in 1-based included
+    init from 0-based half-opened
     """
     def __init__(self, chr, start, end, cigar, seq, strand):
         self.chr = str(chr)
-        self.start = int(start)
+        self.start = int(start) + 1
         self.end = int(end)
         self.cigar = str(cigar)
         self.seq = str(seq)

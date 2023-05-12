@@ -108,17 +108,23 @@ class AnnotationsPipeline:
                 except StopIteration:
                     continue
                 try:
+                    # First, make the transcript 3' extremity match
+                    # what will not be reannotated depending on override/extend
                     criteria.assert_whether_utr_already_annotated(peak, transcript, db,
                                                                   self.args.override_utr, self.args.extend_utr)
+                    # Stop if the peak is already within the existing transcript
                     criteria.assert_peak_not_a_subset_of_transcript(peak, transcript)
                     utr = UTR(start=peak.start, end=peak.end)
+                    # Modify the 5' end of utr to match 3' end of transcript
                     criteria.assert_3_prime_end_and_truncate(peak, transcript, utr)
                     if len(genes) > 1:
                         next_gene_idx = idx + 1
                         next_gene = genes[next_gene_idx % len(genes)]
                         while next_gene != gene:
                             for exon in db.children(next_gene, featuretype=constants.FeatureTypes.Exon):
+                                # Stop if the transcript is within exon of another gene
                                 criteria.assert_transcript_not_a_subset_of_exon(transcript, exon, next_gene)
+                                # Truncate to avoid overlap with another gene
                                 criteria.truncate_to_following_exon(peak, transcript, utr, exon, next_gene,
                                                                     self.args.five_prime_ext)
                             next_gene_idx += 1
@@ -136,7 +142,7 @@ class AnnotationsPipeline:
                         except ValueError:
                             pass
                         else:
-                            utr.end = max(transcript.end, gap_edge)
+                            utr.end = max(transcript.end + 1, gap_edge - 1)
                             colour = AnnotationColour.TruncatedZeroCoverage
                     else:
                         gaps = coverage_gaps.filter(peak.chr, utr.start)
@@ -145,7 +151,7 @@ class AnnotationsPipeline:
                         except ValueError:
                             pass
                         else:
-                            utr.start = min(transcript.start, gap_edge)
+                            utr.start = min(transcript.start - 1, gap_edge + 1)
                             colour = AnnotationColour.TruncatedZeroCoverage
                     if intersect:
                         if peak.strand == "+":
