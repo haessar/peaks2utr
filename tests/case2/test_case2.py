@@ -6,7 +6,7 @@ import unittest
 import gffutils
 
 from peaks2utr import prepare_argparser
-from peaks2utr.annotations import AnnotationsPipeline
+from peaks2utr.annotations import AnnotationsPipeline, NoNearbyFeatures, PotentialUTRZeroCoverage
 from peaks2utr.collections import BroadPeaksList, ZeroCoverageIntervalsDict, SPATTruncationPointsDict
 from peaks2utr.models import UTR, FeatureDB
 
@@ -37,14 +37,28 @@ class TestCase2(unittest.TestCase):
         for peak in self.forward_peaks:
             if peak.name in expected_annotations:
                 pipeline.annotate_utr_for_peak(self.db, peak, self.truncation_points, self.coverage_gaps)
-                result = pipeline.queue.get()
-                self.assertEqual(expected_annotations[peak.name], result)
+                if expected_annotations[peak.name] is None:
+                    self.assertIsNone(pipeline.queue.get())
+                elif expected_annotations[peak.name] is NoNearbyFeatures:
+                    self.assertIsInstance(pipeline.queue.get(), NoNearbyFeatures)
+                elif expected_annotations[peak.name] is PotentialUTRZeroCoverage:
+                    self.assertIsInstance(pipeline.queue.get(), PotentialUTRZeroCoverage)
+                else:
+                    result = None
+                    annotations = AnnotationsDict()
+                    while not pipeline.queue.empty():
+                        result = pipeline.queue.get()
+                        if type(result) == dict:
+                            annotations.update(result)
+                    for gene in expected_annotations[peak.name].keys():
+                        self.assertIn(gene, annotations)
+                        self.assertEqual(annotations.data[gene]['utr'].range, expected_annotations[peak.name][gene].range)
 
     def test_override_utr(self):
         self.args.max_distance = 5000
         self.args.override_utr = True
         expected_annotations = {
-            "reverse_peak_32037": {"ENSMUSG00000033396": UTR(122048355, 122053879)},
+            "reverse_peak_32037": {"ENSMUSG00000033396": UTR(122048356, 122053879)},
             "forward_peak_32170": {"ENSMUSG00000027236": UTR(122052099, 122053546)}
         }
         pipeline = AnnotationsPipeline(self.forward_peaks, self.args, queue=Queue())
@@ -53,9 +67,11 @@ class TestCase2(unittest.TestCase):
                 pipeline.annotate_utr_for_peak(self.db, peak, self.truncation_points, self.coverage_gaps)
                 result = pipeline.queue.get()
                 if result:
-                    gene = [g for g in expected_annotations[peak.name].keys()][0]
-                    self.assertIn(gene, result)
-                    self.assertEqual(expected_annotations[peak.name][gene].range, result[gene]["utr"].range)
+                    for gene in expected_annotations[peak.name].keys():
+                        self.assertIn(gene, result)
+                        self.assertEqual(expected_annotations[peak.name][gene].range, result[gene]["utr"].range)
+                else:
+                    assert expected_annotations[peak.name] is None
 
 
 if __name__ == '__main__':

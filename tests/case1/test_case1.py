@@ -6,7 +6,7 @@ import unittest
 import gffutils
 
 from peaks2utr import prepare_argparser
-from peaks2utr.annotations import AnnotationsPipeline
+from peaks2utr.annotations import AnnotationsPipeline, NoNearbyFeatures, PotentialUTRZeroCoverage
 from peaks2utr.collections import AnnotationsDict, BroadPeaksList, ZeroCoverageIntervalsDict, SPATTruncationPointsDict
 from peaks2utr.models import UTR, FeatureDB
 
@@ -34,15 +34,27 @@ class TestCase1(unittest.TestCase):
         }
         peaks_filename = os.path.join(TEST_DIR, "forward_peaks.broadPeak")
         peaks = BroadPeaksList(broadpeak_fn=peaks_filename, strand="forward")
-        annotations = AnnotationsDict()
         pipeline = AnnotationsPipeline(peaks, self.args, queue=Queue())
         for peak in peaks:
-            pipeline.annotate_utr_for_peak(self.db, peak, self.truncation_points, self.coverage_gaps)
-            result = pipeline.queue.get()
-            annotations.update(result)
-            for gene, features in annotations.items():
-                self.assertIn(gene, expected_annotations)
-                self.assertEqual(features["utr"].range, expected_annotations[gene].range)
+            if peak.name in expected_annotations:
+                pipeline.annotate_utr_for_peak(self.db, peak, self.truncation_points, self.coverage_gaps)
+                if expected_annotations[peak.name] is None:
+                    self.assertIsNone(pipeline.queue.get())
+                elif expected_annotations[peak.name] is NoNearbyFeatures:
+                    self.assertIsInstance(pipeline.queue.get(), NoNearbyFeatures)
+                elif expected_annotations[peak.name] is PotentialUTRZeroCoverage:
+                    self.assertIsInstance(pipeline.queue.get(), PotentialUTRZeroCoverage)
+                else:
+                    result = None
+                    annotations = AnnotationsDict()
+                    while not pipeline.queue.empty():
+                        result = pipeline.queue.get()
+                        if type(result) == dict:
+                            annotations.update(result)
+                    for gene in expected_annotations[peak.name].keys():
+                        self.assertIn(gene, annotations)
+                        self.assertEqual(annotations.data[gene]['utr'].range, expected_annotations[peak.name][gene].range)
+
 
 
 if __name__ == '__main__':
