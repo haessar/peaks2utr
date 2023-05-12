@@ -25,9 +25,9 @@ def write_summary_stats(annotations, pipeline):
                                        int(criteria.assert_3_prime_end_and_truncate.fails)))
         fstats.write(format_stats_line("\t...corresponding to potential 3' UTR removed due to zero read coverage",
                                        total_peaks, int(pipeline.zero_coverage_removal_counter)))
-        fstats.write(format_stats_line("Total 3' UTRs", len([vv for v in annotations.values() for vv in v.values()
-                                                             if vv.featuretype in FeatureTypes.ThreePrimeUTR])))
-        fstats.write(format_stats_line("\t...annotated by {}".format(__package__), int(pipeline.new_utr_counter)))
+        fstats.write(format_stats_line("Total 3' UTRs", len(annotations.filter(featuretype=FeatureTypes.ThreePrimeUTR))))
+        fstats.write(format_stats_line("\t...annotated by {}".format(__package__),
+                                       len(annotations.filter(featuretype=FeatureTypes.ThreePrimeUTR, source=__package__))))
 
 
 def merge_annotations(db, annotations):

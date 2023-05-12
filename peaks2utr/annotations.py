@@ -25,7 +25,6 @@ class AnnotationsPipeline:
     def __init__(self, peaks, args, queue=None, db_path=None):
         super().__init__()
         self.no_features_counter = Counter()
-        self.new_utr_counter = Counter()
         self.zero_coverage_removal_counter = Counter()
         self.peaks = peaks
         self.total_peaks = len(peaks)
@@ -165,7 +164,6 @@ class AnnotationsPipeline:
                             gene.start = transcript.start = utr.start
                         self.queue.put({gene.id: features})
                         utr_found = True
-                        self.new_utr_counter.increment()
                     else:
                         if utr.length == 0:
                             logging.debug(

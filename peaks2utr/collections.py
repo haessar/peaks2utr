@@ -1,4 +1,5 @@
 import collections
+from collections.abc import Sequence
 import copy
 import csv
 import json
@@ -81,6 +82,18 @@ class AnnotationsDict(collections.UserDict):
                 self._apply_gtf_dialect(feature, attrs, gene_id)
             feature.attributes = gffutils.attributes.Attributes(**attrs)
         return feature
+
+    def filter(self, **kwargs):
+        """
+        Filter features for given attributes.
+        """
+        all_features = [vv for v in self.values() for vv in v.values()]
+        for attr, obj in kwargs.items():
+            if isinstance(obj, Sequence) and not isinstance(obj, str):
+                filtered_features = [f for f in all_features if getattr(f, attr) in obj]
+            else:
+                filtered_features = [f for f in all_features if getattr(f, attr) == obj]
+        return filtered_features
 
 
 class ZeroCoverageIntervalsDict(collections.UserDict):

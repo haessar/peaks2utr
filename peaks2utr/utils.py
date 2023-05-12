@@ -32,13 +32,6 @@ class Counter:
                 self.val.value += 1
                 self.seen.add(key)
 
-    def increment(self):
-        """
-        Increment this Counter in any circumstance.
-        """
-        with self.lock:
-            self.val.value += 1
-
     @property
     def value(self):
         with self.lock:
