@@ -152,10 +152,16 @@ def sum_nested_dicts(d1, d2):
     return result
 
 
-def features_dict_for_gene(db, gene):
+def features_dict_for_gene(db, gene, transcript=None):
     """
     Return a dictionary containing gene and all its child features.
+    Pass an optional transcript when 3' UTR has been annotated to allow extension.
     """
     features = {"gene": gene}
-    features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(gene)) if f.id != gene.id})
+    for idx, f in enumerate(db.children(gene)):
+        if f.id != gene.id:
+            if transcript and f.id == transcript.id:
+                features.update({"transcript": transcript})
+            else:
+                features.update({"feature_{}".format(idx): f})
     return features
