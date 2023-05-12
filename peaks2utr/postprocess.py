@@ -20,7 +20,7 @@ def write_summary_stats(annotations, pipeline):
         fstats.write(format_stats_line("\t...corresponding to an already annotated 3' UTR", total_peaks,
                                        int(criteria.assert_whether_utr_already_annotated.fails)))
         fstats.write(format_stats_line("\t...contained within a feature", total_peaks,
-                                       int(criteria.assert_not_a_subset.fails)))
+                                       int(criteria.assert_peak_not_a_subset_of_transcript.fails)))
         fstats.write(format_stats_line("\t...corresponding to 5'-end of a feature", total_peaks,
                                        int(criteria.assert_3_prime_end_and_truncate.fails)))
         fstats.write(format_stats_line("\t...corresponding to potential 3' UTR removed due to zero read coverage",

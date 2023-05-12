@@ -69,8 +69,8 @@ def assert_3_prime_end_and_truncate(peak, transcript, utr):
     """
     If a peak occurs at the untranslated 3'-end of a transcript, we need to set the utr start/end to occur at the end/start of
     the existing transcript annotation, respective of strand.
-    Otherwise, we take advantage of the fact that the 'assert_not_a_subset' criteria has passed to assume it must
-    correspond to the 5'-end of the transcript.
+    Otherwise, we take advantage of the fact that the 'assert_peak_not_a_subset_of_transcript' criteria has passed to assume
+    it must correspond to the 5'-end of the transcript.
     """
     if peak.strand == "+" and peak.end > transcript.end:
         utr.start = transcript.end
