@@ -32,13 +32,6 @@ class Counter:
                 self.val.value += 1
                 self.seen.add(key)
 
-    def increment(self):
-        """
-        Increment this Counter in any circumstance.
-        """
-        with self.lock:
-            self.val.value += 1
-
     @property
     def value(self):
         with self.lock:
@@ -150,3 +143,18 @@ def sum_nested_dicts(d1, d2):
     result = d2.copy()
     result.update({k: sum(v, d2.get(k)) for k, v in d1.items()})
     return result
+
+
+def features_dict_for_gene(db, gene, transcript=None):
+    """
+    Return a dictionary containing gene and all its child features.
+    Pass an optional transcript when 3' UTR has been annotated to allow extension.
+    """
+    features = {"gene": gene}
+    for idx, f in enumerate(db.children(gene)):
+        if f.id != gene.id:
+            if transcript and f.id == transcript.id:
+                features.update({"transcript": transcript})
+            else:
+                features.update({"feature_{}".format(idx): f})
+    return features

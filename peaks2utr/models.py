@@ -1,4 +1,3 @@
-from abc import ABC
 import re
 
 import gffutils
@@ -6,7 +5,7 @@ import gffutils
 from .constants import AnnotationColour, FeatureTypes, STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GFF_DIALECT, GFFUTILS_GTF_DIALECT
 
 
-class RangeMixin(ABC):
+class RangeMixin:
     start: int
     end: int
 

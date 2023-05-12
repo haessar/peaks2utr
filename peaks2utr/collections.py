@@ -1,4 +1,6 @@
 import collections
+from collections.abc import Sequence
+import copy
 import csv
 import json
 
@@ -31,7 +33,13 @@ class AnnotationsDict(collections.UserDict):
                 # gene features are redundant in GTF output
                 if self.gtf_out and f.featuretype in constants.FeatureTypes.Gene:
                     continue
-                yield str(self._apply_feature_dialect(f, gid)) + '\n'
+                formatted_f = self._apply_feature_dialect(f, gid)
+                yield str(formatted_f) + '\n'
+                # exon matching three_prime_UTR for GTF output
+                if self.gtf_out and f.source == __package__ and f.featuretype in constants.FeatureTypes.ThreePrimeUTR:
+                    exon = copy.copy(formatted_f)
+                    exon.featuretype = constants.FeatureTypes.Exon[0]
+                    yield str(exon) + '\n'
 
     @staticmethod
     def _apply_gff_dialect(feature, attrs):
@@ -74,6 +82,18 @@ class AnnotationsDict(collections.UserDict):
                 self._apply_gtf_dialect(feature, attrs, gene_id)
             feature.attributes = gffutils.attributes.Attributes(**attrs)
         return feature
+
+    def filter(self, **kwargs):
+        """
+        Filter features for given attributes.
+        """
+        all_features = [vv for v in self.values() for vv in v.values()]
+        for attr, obj in kwargs.items():
+            if isinstance(obj, Sequence) and not isinstance(obj, str):
+                filtered_features = [f for f in all_features if getattr(f, attr) in obj]
+            else:
+                filtered_features = [f for f in all_features if getattr(f, attr) == obj]
+        return filtered_features
 
 
 class ZeroCoverageIntervalsDict(collections.UserDict):

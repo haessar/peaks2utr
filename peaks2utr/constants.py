@@ -19,6 +19,7 @@ class FeatureTypes:
     ThreePrimeUTR = ['three_prime_UTR', 'three_prime_utr']
     GffTranscript = ['mRNA']
     GtfTranscript = ['transcript']
+    Exon = ['exon']
 
 
 STRAND_MAP = {

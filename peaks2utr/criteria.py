@@ -45,13 +45,23 @@ def assert_whether_utr_already_annotated(peak, transcript, db, override_utr, ext
 
 
 @track_failed_peaks
-def assert_not_a_subset(peak, transcript):
+def assert_peak_not_a_subset_of_transcript(peak, transcript):
     """
     If a peak occurs entirely within an existing transcript annotation (i.e. it's a subset), we consider that it is already
     accounted for and can't possibly refer to a new UTR.
     """
     if peak.range.issubset(transcript.range):
-        raise CriteriaFailure("Peak %s wholly contained within transcript %s" % (peak.name, transcript.id))
+        raise CriteriaFailure("%s %s wholly contained within transcript %s"
+                              % (peak.__class__.__name__, peak.name, transcript.id))
+
+
+def assert_transcript_not_a_subset_of_exon(transcript, exon, gene):
+    """
+    If a transcript occurs entirely within another gene's exon, its 3' UTR should not be annotated.
+    """
+    if transcript.range.issubset(exon.range):
+        raise CriteriaFailure("%s %s wholly contained within exon %s of gene %s"
+                              % (transcript.__class__.__name__, transcript.id, exon.id, gene.id))
 
 
 @track_failed_peaks
@@ -59,8 +69,8 @@ def assert_3_prime_end_and_truncate(peak, transcript, utr):
     """
     If a peak occurs at the untranslated 3'-end of a transcript, we need to set the utr start/end to occur at the end/start of
     the existing transcript annotation, respective of strand.
-    Otherwise, we take advantage of the fact that the 'assert_not_a_subset' criteria has passed to assume it must
-    correspond to the 5'-end of the transcript.
+    Otherwise, we take advantage of the fact that the 'assert_peak_not_a_subset_of_transcript' criteria has passed to assume
+    it must correspond to the 5'-end of the transcript.
     """
     if peak.strand == "+" and peak.end > transcript.end:
         utr.start = transcript.end
@@ -70,25 +80,14 @@ def assert_3_prime_end_and_truncate(peak, transcript, utr):
         raise CriteriaFailure("Peak %s corresponds to 5'-end of transcript %s" % (peak.name, transcript.id))
 
 
-def truncate_5_prime_end(peak, next_gene, utr, five_prime_ext=0):
+def truncate_to_following_exon(peak, transcript, utr, exon, gene, five_prime_ext=0):
     """
-    If a peak is broad enough it can potentially overlap the 5'-end of the following gene, so we check for an
+    If a peak is broad enough that it overlaps an exon of another gene, we check for an
     intersection and truncate if it exists (taking into account assumed 5' extension).
     """
-    if utr.range.intersection(next_gene.range):
-        logging.debug("Peak %s overlapping following gene %s: Truncating" % (peak.name, next_gene.id))
-        if peak.strand == "+":
-            utr.end = next_gene.start - five_prime_ext
-        else:
-            utr.start = next_gene.end + five_prime_ext
-
-
-def belongs_to_next_gene(peak, next_gene, five_prime_ext=0):
-    """
-    If the max_distance is large enough, it's entirely possible for a peak to occur after the start of the following
-    gene and still be within range of the present gene. In this case we want to consider it "belonging" to the following
-    gene only (taking into account assumed 5' extension).
-    """
-    if (peak.strand == "+" and peak.start > next_gene.start - five_prime_ext) or \
-       (peak.strand == "-" and peak.end < next_gene.end + five_prime_ext):
-        raise CriteriaFailure("Peak %s belongs entirely to following gene %s" % (peak.name, next_gene.id))
+    if utr.range.intersection(exon.range):
+        logging.debug("Peak %s overlapping exon %s of gene %s: Truncating" % (peak.name, exon.id, gene.id))
+        if peak.strand == "+" and exon.start > transcript.end:
+            utr.end = exon.start - five_prime_ext
+        elif peak.strand == "-" and exon.end < transcript.start:
+            utr.start = exon.end + five_prime_ext
