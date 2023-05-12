@@ -152,10 +152,10 @@ def sum_nested_dicts(d1, d2):
     return result
 
 
-def iter_gene_children(db, gene, featuretype):
+def features_dict_for_gene(db, gene):
     """
-    Yield each feature of given featuretype belonging to gene
+    Return a dictionary containing gene and all its child features.
     """
-    for child in db.children(gene):
-        if child.featuretype in featuretype:
-            yield child
+    features = {"gene": gene}
+    features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(gene)) if f.id != gene.id})
+    return features

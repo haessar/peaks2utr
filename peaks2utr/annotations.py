@@ -10,7 +10,7 @@ from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
 from .exceptions import AnnotationsError
 from .models import UTR, FeatureDB
-from .utils import Counter, Falsey, cached, iter_batches, iter_gene_children
+from .utils import Counter, Falsey, cached, features_dict_for_gene, iter_batches
 
 
 class NoNearbyFeatures(Falsey):
@@ -118,7 +118,7 @@ class AnnotationsPipeline:
                         next_gene_idx = idx + 1
                         next_gene = genes[next_gene_idx % len(genes)]
                         while next_gene != gene:
-                            for exon in iter_gene_children(db, next_gene, constants.FeatureTypes.Exon):
+                            for exon in db.children(next_gene, featuretype=constants.FeatureTypes.Exon):
                                 criteria.assert_transcript_not_a_subset_of_exon(transcript, exon, next_gene)
                                 criteria.truncate_to_following_exon(peak, transcript, utr, exon, next_gene,
                                                                     self.args.five_prime_ext)
@@ -157,9 +157,7 @@ class AnnotationsPipeline:
                     if utr.is_valid():
                         logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                         utr.generate_feature(gene, transcript, db, colour, self.args.gtf_in)
-                        features = {"gene": gene, "transcript": transcript}
-                        features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(transcript))
-                                        if f.id != transcript.id and f.id != gene.id})
+                        features = features_dict_for_gene(db, gene)
                         features.update({"utr": utr.feature})
                         if peak.strand == "+":
                             gene.end = transcript.end = utr.end

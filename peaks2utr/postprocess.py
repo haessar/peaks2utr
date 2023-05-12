@@ -8,7 +8,7 @@ import sqlite3
 from . import criteria
 from .constants import FeatureTypes, LOG_DIR, TMP_GFF_FN
 from .models import FeatureDB
-from .utils import cached, format_stats_line
+from .utils import cached, features_dict_for_gene, format_stats_line
 
 
 def write_summary_stats(annotations, pipeline):
@@ -40,9 +40,7 @@ def merge_annotations(db, annotations):
     db = FeatureDB(db)
     for gene in db.all_features(featuretype=FeatureTypes.Gene):
         if gene.id not in annotations:
-            features = {"gene": gene}
-            features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(gene))
-                             if f.id != gene.id})
+            features = features_dict_for_gene(db, gene)
             annotations[gene.id] = features
 
 
