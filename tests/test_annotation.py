@@ -30,7 +30,6 @@ class TestUTRAnnotation(unittest.TestCase):
 
     def strand_annotations(self, peaks_filename, strand, expected_annotations):
         peaks = BroadPeaksList(broadpeak_fn=peaks_filename, strand=strand)
-        annotations = AnnotationsDict()
         pipeline = AnnotationsPipeline(peaks, self.args, queue=Queue())
         for peak in peaks:
             if peak.name in expected_annotations:
@@ -41,6 +40,7 @@ class TestUTRAnnotation(unittest.TestCase):
                     self.assertIsInstance(pipeline.queue.get(), NoNearbyFeatures)
                 else:
                     result = None
+                    annotations = AnnotationsDict()
                     while not pipeline.queue.empty():
                         result = pipeline.queue.get()
                         if type(result) == dict:
