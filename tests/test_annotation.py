@@ -52,8 +52,11 @@ class TestUTRAnnotation(unittest.TestCase):
     def test_forward_strand_annotations(self):
         expected_annotations = {
             'forward_peak_3': None,
+            # Up to end of forward_peak_6
             'forward_peak_6': {'PBANKA_0100041.1': UTR(14119, 17222)},
-            'forward_peak_9': {'PBANKA_0100100.1': UTR(27917, 29285), 'PBANKA_0100200.1': UTR(30483, 31051)},
+            # PBANKA_0100100.1: Up to beginning of PBANKA_0100200.1
+            'forward_peak_9': {'PBANKA_0100100.1': UTR(27917, 29284), 'PBANKA_0100200.1': UTR(30483, 31051)},
+            # Up to end of forward_peak_10
             'forward_peak_10': {'PBANKA_0100200.1': UTR(30483, 33095)},
         }
         peaks_filename = os.path.join(TEST_DIR, "test_forward_peaks.broadPeak")
@@ -61,18 +64,25 @@ class TestUTRAnnotation(unittest.TestCase):
 
     def test_reverse_strand_annotations(self):
         expected_annotations = {
-            'reverse_peak_1': {'PBANKA_0100021.1': UTR(801, 1097)},
+            # Up to end of reverse_peak_1
+            'reverse_peak_1': {'PBANKA_0100021.1': UTR(802, 1097)},
             'reverse_peak_3': NoNearbyFeatures,
             'reverse_peak_4': NoNearbyFeatures,
-            'reverse_peak_5': {'PBANKA_0100061.1': UTR(21296, 21969)},
+            # Up to end of reverse_peak_5
+            'reverse_peak_5': {'PBANKA_0100061.1': UTR(21297, 21969)},
             'reverse_peak_6': None,
-            'reverse_peak_11': {'PBANKA_0100800.1': UTR(45612, 47558)},
+            # Up to end of reverse_peak_11
+            'reverse_peak_11': {'PBANKA_0100800.1': UTR(45613, 47558)},
             'reverse_peak_13': None,
             'reverse_peak_14': None,
-            'reverse_peak_24': {'PBANKA_0101500.1': UTR(77310, 77683)},
-            'reverse_peak_30': {'PBANKA_0102200.1': UTR(95595, 96817)},
-            'reverse_peak_54': {'PBANKA_0103400.1': UTR(154886, 155565)},
-            'reverse_peak_143': {'PBANKA_0111300.1': UTR(437496, 438264)}
+            # Up to end of reverse_peak_24
+            'reverse_peak_24': {'PBANKA_0101500.1': UTR(77311, 77683)},
+            # Up to gene_id PBANKA_0102100.1
+            'reverse_peak_30': {'PBANKA_0102200.1': UTR(95596, 96817)},
+            # Up to end of reverse_peak_54
+            'reverse_peak_54': {'PBANKA_0103400.1': UTR(154887, 155565)},
+            # Up to end of reverse_peak_143
+            'reverse_peak_143': {'PBANKA_0111300.1': UTR(437497, 438264)}
         }
         peaks_filename = os.path.join(TEST_DIR, "test_reverse_peaks.broadPeak")
         self.strand_annotations(peaks_filename, 'reverse', expected_annotations)
