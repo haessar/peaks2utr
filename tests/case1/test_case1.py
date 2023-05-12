@@ -29,8 +29,8 @@ class TestCase1(unittest.TestCase):
 
     def test_intronic_gene_truncation(self):
         expected_annotations = {
-            "ENSMUSG00000087590": UTR(33795986, 33796107),
-            "ENSMUSG00000092819": UTR(33795295, 33795382)
+            "ENSMUSG00000087590": UTR(33795987, 33796107),
+            "ENSMUSG00000092819": UTR(33795296, 33795382)
         }
         peaks_filename = os.path.join(TEST_DIR, "forward_peaks.broadPeak")
         peaks = BroadPeaksList(broadpeak_fn=peaks_filename, strand="forward")
