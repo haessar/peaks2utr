@@ -1,4 +1,5 @@
 import collections
+import copy
 import csv
 import json
 
@@ -35,8 +36,9 @@ class AnnotationsDict(collections.UserDict):
                 yield str(formatted_f) + '\n'
                 # exon matching three_prime_UTR for GTF output
                 if self.gtf_out and f.source == __package__ and f.featuretype in constants.FeatureTypes.ThreePrimeUTR:
-                    formatted_f.featuretype = constants.FeatureTypes.Exon[0]
-                    yield str(formatted_f) + '\n'
+                    exon = copy.copy(formatted_f)
+                    exon.featuretype = constants.FeatureTypes.Exon[0]
+                    yield str(exon) + '\n'
 
     @staticmethod
     def _apply_gff_dialect(feature, attrs):
