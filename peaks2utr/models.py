@@ -14,7 +14,7 @@ class RangeMixin:
 
     @property
     def range(self):
-        return set(range(self.start, self.end))
+        return set(range(self.start, self.end + 1))
 
     @property
     def length(self):
