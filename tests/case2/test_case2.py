@@ -7,7 +7,7 @@ import gffutils
 
 from peaks2utr import prepare_argparser
 from peaks2utr.annotations import AnnotationsPipeline, NoNearbyFeatures, PotentialUTRZeroCoverage
-from peaks2utr.collections import BroadPeaksList, ZeroCoverageIntervalsDict, SPATTruncationPointsDict
+from peaks2utr.collections import AnnotationsDict, BroadPeaksList, ZeroCoverageIntervalsDict, SPATTruncationPointsDict
 from peaks2utr.models import UTR, FeatureDB
 
 TEST_DIR = os.path.dirname(__file__)
