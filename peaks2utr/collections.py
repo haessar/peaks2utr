@@ -99,8 +99,6 @@ class AnnotationsDict(collections.UserDict):
 class ZeroCoverageIntervalsDict(collections.UserDict):
     """
     Dictionary of zero coverage intervals per chromosome from parsed BED file.
-    1-based included
-    init from bed which is 0-based half-opened
     """
     class Interval:
         """
