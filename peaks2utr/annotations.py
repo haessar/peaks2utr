@@ -23,7 +23,6 @@ class PotentialUTRZeroCoverage(Falsey):
 
 class AnnotationsPipeline:
     def __init__(self, peaks, args, queue=None, db_path=None):
-        super().__init__()
         self.no_features_counter = Counter()
         self.zero_coverage_removal_counter = Counter()
         self.peaks = peaks
