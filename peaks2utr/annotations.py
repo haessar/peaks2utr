@@ -154,6 +154,9 @@ class AnnotationsPipeline:
                         except ValueError:
                             pass
                         else:
+                            # If gap_edge is higher than transcript.end
+                            # We set utr.start to transcript.start
+                            # This will generate a utr of size 0
                             utr.start = min(transcript.start, gap_edge + 1)
                             colour = AnnotationColour.TruncatedZeroCoverage
                     if intersect:
