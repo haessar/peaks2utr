@@ -1,4 +1,7 @@
-from abc import ABC
+"""
+For a discussion of 0-based/1-based counting systems,
+see https://genome-blog.soe.ucsc.edu/blog/2016/12/12/the-ucsc-genome-browser-coordinate-counting-systems/
+"""
 import re
 
 import gffutils
@@ -6,26 +9,30 @@ import gffutils
 from .constants import AnnotationColour, FeatureTypes, STRAND_CIGAR_SOFT_CLIP_REGEX, GFFUTILS_GFF_DIALECT, GFFUTILS_GTF_DIALECT
 
 
-class RangeMixin(ABC):
+class RangeMixin:
+    """
+    Like gff/gtf this class mixin is 1-based included
+    """
     start: int
     end: int
 
     @property
     def range(self):
-        return set(range(self.start, self.end))
+        return set(range(self.start, self.end + 1))
 
     @property
     def length(self):
-        return self.end - self.start
+        return self.end - self.start + 1
 
 
 class Peak(RangeMixin):
     """
-    MACS3 peak in BED 6+3 format.
+    MACS3 peak in BED6+3 format but 1-based included
+    init from 0-based half-opened BED6+3 arguments.
     """
     def __init__(self, *args):
         self.chr = str(args[0])
-        self.start = int(args[1])
+        self.start = int(args[1]) + 1
         self.end = int(args[2])
         self.name = str(args[3])
         self.score = int(args[4])
@@ -115,16 +122,17 @@ class UTR(RangeMixin):
         self.feature = Feature(id=id, **d)
 
     def is_valid(self):
-        return self.end > self.start
+        return self.end >= self.start
 
 
 class SoftClippedRead:
     """
-    Read in SAM file format.
+    Read in SAM file format and store in 1-based included
+    init from 0-based half-opened
     """
     def __init__(self, chr, start, end, cigar, seq, strand):
         self.chr = str(chr)
-        self.start = int(start)
+        self.start = int(start) + 1
         self.end = int(end)
         self.cigar = str(cigar)
         self.seq = str(seq)

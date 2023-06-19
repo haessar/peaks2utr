@@ -1,4 +1,6 @@
 import collections
+from collections.abc import Sequence
+import copy
 import csv
 import json
 
@@ -31,7 +33,13 @@ class AnnotationsDict(collections.UserDict):
                 # gene features are redundant in GTF output
                 if self.gtf_out and f.featuretype in constants.FeatureTypes.Gene:
                     continue
-                yield str(self._apply_feature_dialect(f, gid)) + '\n'
+                formatted_f = self._apply_feature_dialect(f, gid)
+                yield str(formatted_f) + '\n'
+                # exon matching three_prime_UTR for GTF output
+                if self.gtf_out and f.source == __package__ and f.featuretype in constants.FeatureTypes.ThreePrimeUTR:
+                    exon = copy.copy(formatted_f)
+                    exon.featuretype = constants.FeatureTypes.Exon[0]
+                    yield str(exon) + '\n'
 
     @staticmethod
     def _apply_gff_dialect(feature, attrs):
@@ -75,14 +83,30 @@ class AnnotationsDict(collections.UserDict):
             feature.attributes = gffutils.attributes.Attributes(**attrs)
         return feature
 
+    def filter(self, **kwargs):
+        """
+        Filter features for given attributes.
+        """
+        all_features = [vv for v in self.values() for vv in v.values()]
+        for attr, obj in kwargs.items():
+            if isinstance(obj, Sequence) and not isinstance(obj, str):
+                filtered_features = [f for f in all_features if getattr(f, attr) in obj]
+            else:
+                filtered_features = [f for f in all_features if getattr(f, attr) == obj]
+        return filtered_features
+
 
 class ZeroCoverageIntervalsDict(collections.UserDict):
     """
     Dictionary of zero coverage intervals per chromosome from parsed BED file.
     """
     class Interval:
+        """
+        1-based included
+        init from 0-based half-opened
+        """
         def __init__(self, start, end):
-            self.start = int(start)
+            self.start = int(start) + 1
             self.end = int(end)
 
     def __init__(self, dict=None, bed_fn=None):
@@ -104,7 +128,7 @@ class ZeroCoverageIntervalsDict(collections.UserDict):
         distributed systems.
         """
         if chr in self:
-            return [i for i in self[chr] if i.start < base < i.end]
+            return [i for i in self[chr] if i.start <= base <= i.end]
         return []
 
 
@@ -121,7 +145,7 @@ class SPATTruncationPointsDict(collections.UserDict):
 
 class BroadPeaksList(collections.UserList):
     """
-    List of MACS3 broad peaks
+    List of MACS3 broad peaks.
     """
     def __init__(self, initlist=None, broadpeak_fn=None, strand=None):
         super().__init__(initlist)

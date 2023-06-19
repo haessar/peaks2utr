@@ -8,7 +8,7 @@ import sqlite3
 from . import criteria
 from .constants import FeatureTypes, LOG_DIR, TMP_GFF_FN
 from .models import FeatureDB
-from .utils import cached, format_stats_line
+from .utils import cached, features_dict_for_gene, format_stats_line
 
 
 def write_summary_stats(annotations, pipeline):
@@ -20,14 +20,14 @@ def write_summary_stats(annotations, pipeline):
         fstats.write(format_stats_line("\t...corresponding to an already annotated 3' UTR", total_peaks,
                                        int(criteria.assert_whether_utr_already_annotated.fails)))
         fstats.write(format_stats_line("\t...contained within a feature", total_peaks,
-                                       int(criteria.assert_not_a_subset.fails)))
+                                       int(criteria.assert_peak_not_a_subset_of_transcript.fails)))
         fstats.write(format_stats_line("\t...corresponding to 5'-end of a feature", total_peaks,
                                        int(criteria.assert_3_prime_end_and_truncate.fails)))
         fstats.write(format_stats_line("\t...corresponding to potential 3' UTR removed due to zero read coverage",
                                        total_peaks, int(pipeline.zero_coverage_removal_counter)))
-        fstats.write(format_stats_line("Total 3' UTRs", len([vv for v in annotations.values() for vv in v.values()
-                                                             if vv.featuretype in FeatureTypes.ThreePrimeUTR])))
-        fstats.write(format_stats_line("\t...annotated by {}".format(__package__), int(pipeline.new_utr_counter)))
+        fstats.write(format_stats_line("Total 3' UTRs", len(annotations.filter(featuretype=FeatureTypes.ThreePrimeUTR))))
+        fstats.write(format_stats_line("\t...annotated by {}".format(__package__),
+                                       len(annotations.filter(featuretype=FeatureTypes.ThreePrimeUTR, source=__package__))))
 
 
 def merge_annotations(db, annotations):
@@ -40,9 +40,7 @@ def merge_annotations(db, annotations):
     db = FeatureDB(db)
     for gene in db.all_features(featuretype=FeatureTypes.Gene):
         if gene.id not in annotations:
-            features = {"gene": gene}
-            features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(gene))
-                             if f.id != gene.id})
+            features = features_dict_for_gene(db, gene)
             annotations[gene.id] = features
 
 

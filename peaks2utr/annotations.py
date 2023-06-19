@@ -1,4 +1,3 @@
-import copy
 import logging
 import math
 import multiprocessing
@@ -11,7 +10,7 @@ from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
 from .exceptions import AnnotationsError
 from .models import UTR, FeatureDB
-from .utils import Counter, Falsey, cached, iter_batches
+from .utils import Counter, Falsey, cached, features_dict_for_gene, iter_batches
 
 
 class NoNearbyFeatures(Falsey):
@@ -24,9 +23,7 @@ class PotentialUTRZeroCoverage(Falsey):
 
 class AnnotationsPipeline:
     def __init__(self, peaks, args, queue=None, db_path=None):
-        super().__init__()
         self.no_features_counter = Counter()
-        self.new_utr_counter = Counter()
         self.zero_coverage_removal_counter = Counter()
         self.peaks = peaks
         self.total_peaks = len(peaks)
@@ -110,15 +107,27 @@ class AnnotationsPipeline:
                 except StopIteration:
                     continue
                 try:
+                    # First, make the transcript 3' extremity match
+                    # what will not be reannotated depending on override/extend
                     criteria.assert_whether_utr_already_annotated(peak, transcript, db,
                                                                   self.args.override_utr, self.args.extend_utr)
-                    criteria.assert_not_a_subset(peak, transcript)
+                    # Stop if the peak is already within the existing transcript
+                    criteria.assert_peak_not_a_subset_of_transcript(peak, transcript)
                     utr = UTR(start=peak.start, end=peak.end)
+                    # Modify the 5' end of utr to match 3' end of transcript
                     criteria.assert_3_prime_end_and_truncate(peak, transcript, utr)
-                    if len(genes) > idx + 1:
-                        next_gene = copy.deepcopy(genes[idx + 1])
-                        criteria.belongs_to_next_gene(peak, next_gene, self.args.five_prime_ext)
-                        criteria.truncate_5_prime_end(peak, next_gene, utr, self.args.five_prime_ext)
+                    if len(genes) > 1:
+                        next_gene_idx = idx + 1
+                        next_gene = genes[next_gene_idx % len(genes)]
+                        while next_gene != gene:
+                            for exon in db.children(next_gene, featuretype=constants.FeatureTypes.Exon):
+                                # Stop if the transcript is within exon of another gene
+                                criteria.assert_transcript_not_a_subset_of_exon(transcript, exon, next_gene)
+                                # Truncate to avoid overlap with another gene
+                                criteria.truncate_to_following_exon(peak, transcript, utr, exon, next_gene,
+                                                                    self.args.five_prime_ext)
+                            next_gene_idx += 1
+                            next_gene = genes[next_gene_idx % len(genes)]
                 except criteria.CriteriaFailure as e:
                     logging.debug("%s - %s" % (type(e).__name__, e))
                 else:
@@ -132,7 +141,10 @@ class AnnotationsPipeline:
                         except ValueError:
                             pass
                         else:
-                            utr.end = max(transcript.end, gap_edge)
+                            # If gap_edge is lower than transcript.end
+                            # We set utr.end to transcript.end
+                            # This will generate a utr of size 0
+                            utr.end = max(transcript.end, gap_edge - 1)
                             colour = AnnotationColour.TruncatedZeroCoverage
                     else:
                         gaps = coverage_gaps.filter(peak.chr, utr.start)
@@ -141,7 +153,10 @@ class AnnotationsPipeline:
                         except ValueError:
                             pass
                         else:
-                            utr.start = min(transcript.start, gap_edge)
+                            # If gap_edge is higher than transcript.end
+                            # We set utr.start to transcript.start
+                            # This will generate a utr of size 0
+                            utr.start = min(transcript.start, gap_edge + 1)
                             colour = AnnotationColour.TruncatedZeroCoverage
                     if intersect:
                         if peak.strand == "+":
@@ -152,9 +167,7 @@ class AnnotationsPipeline:
                     if utr.is_valid():
                         logging.debug("Peak {} corresponds to 3' UTR {} of gene {}".upper().format(peak.name, utr, gene.id))
                         utr.generate_feature(gene, transcript, db, colour, self.args.gtf_in)
-                        features = {"gene": gene, "transcript": transcript}
-                        features.update({"feature_{}".format(idx): f for idx, f in enumerate(db.children(transcript))
-                                        if f.id != transcript.id and f.id != gene.id})
+                        features = features_dict_for_gene(db, gene, transcript)
                         features.update({"utr": utr.feature})
                         if peak.strand == "+":
                             gene.end = transcript.end = utr.end
@@ -162,7 +175,6 @@ class AnnotationsPipeline:
                             gene.start = transcript.start = utr.start
                         self.queue.put({gene.id: features})
                         utr_found = True
-                        self.new_utr_counter.increment()
                     else:
                         if utr.length == 0:
                             logging.debug(
