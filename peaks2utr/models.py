@@ -1,3 +1,7 @@
+"""
+For a discussion of 0-based/1-based counting systems,
+see https://genome-blog.soe.ucsc.edu/blog/2016/12/12/the-ucsc-genome-browser-coordinate-counting-systems/
+"""
 import re
 
 import gffutils
@@ -7,7 +11,7 @@ from .constants import AnnotationColour, FeatureTypes, STRAND_CIGAR_SOFT_CLIP_RE
 
 class RangeMixin:
     """
-    Like gff/gtf this class is 1-based included
+    Like gff/gtf this class mixin is 1-based included
     """
     start: int
     end: int
@@ -23,8 +27,8 @@ class RangeMixin:
 
 class Peak(RangeMixin):
     """
-    MACS3 peak in BED 6+3 format but 1-based included
-    init from 0-based half-opened = BED6+3
+    MACS3 peak in BED6+3 format but 1-based included
+    init from 0-based half-opened BED6+3 arguments.
     """
     def __init__(self, *args):
         self.chr = str(args[0])

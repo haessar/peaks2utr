@@ -23,7 +23,6 @@ class PotentialUTRZeroCoverage(Falsey):
 
 class AnnotationsPipeline:
     def __init__(self, peaks, args, queue=None, db_path=None):
-        super().__init__()
         self.no_features_counter = Counter()
         self.zero_coverage_removal_counter = Counter()
         self.peaks = peaks
@@ -154,6 +153,9 @@ class AnnotationsPipeline:
                         except ValueError:
                             pass
                         else:
+                            # If gap_edge is higher than transcript.end
+                            # We set utr.start to transcript.start
+                            # This will generate a utr of size 0
                             utr.start = min(transcript.start, gap_edge + 1)
                             colour = AnnotationColour.TruncatedZeroCoverage
                     if intersect:

@@ -99,8 +99,6 @@ class AnnotationsDict(collections.UserDict):
 class ZeroCoverageIntervalsDict(collections.UserDict):
     """
     Dictionary of zero coverage intervals per chromosome from parsed BED file.
-    1-based included
-    init from bed which is 0-based half-opened
     """
     class Interval:
         """
@@ -147,8 +145,7 @@ class SPATTruncationPointsDict(collections.UserDict):
 
 class BroadPeaksList(collections.UserList):
     """
-    List of MACS3 broad peaks 1-based included
-    init from broadpeak which is 0-based half-opened
+    List of MACS3 broad peaks.
     """
     def __init__(self, initlist=None, broadpeak_fn=None, strand=None):
         super().__init__(initlist)

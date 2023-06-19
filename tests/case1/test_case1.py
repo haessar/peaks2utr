@@ -56,6 +56,5 @@ class TestCase1(unittest.TestCase):
                         self.assertEqual(annotations.data[gene]['utr'].range, expected_annotations[peak.name][gene].range)
 
 
-
 if __name__ == '__main__':
     unittest.main()
