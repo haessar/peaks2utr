@@ -1,6 +1,11 @@
 import asyncio
 import os
 import os.path
+from sys import platform
+
+if platform == "darwin":
+    import multiprocessing
+    multiprocessing.set_start_method("fork")
 
 
 def prepare_argparser():
