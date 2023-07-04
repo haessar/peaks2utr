@@ -156,7 +156,7 @@ async def create_db(gff_in):
     if not os.path.isfile(gff_db):
         logging.info('Creating gff db.')
         await sync_to_async(gffutils.create_db)(
-            gff_in, gff_db, force=True, verbose=True)
+            gff_in, gff_db, force=True, verbose=True, merge_strategy="create_unique")
         logging.info('Finished creating gff db.')
     else:
         logging.info("Using cached gff db.")
