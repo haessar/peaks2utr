@@ -30,25 +30,27 @@ def prepare_argparser():
         before annotating in .gff file.
         """
     )
-    parser.add_argument('GFF_IN', help="input 'canonical' annotations file in gff or gtf format.")
-    parser.add_argument('BAM_IN', help="input reads file in bam format.")
+    parser.add_argument('GFF_IN', help="input 'canonical' annotations file in gff or gtf format")
+    parser.add_argument('BAM_IN', help="input reads file in bam format")
     parser.add_argument('--max-distance', type=int, default=200,
-                        help='maximum distance in bases that UTR can be from a transcript.')
-    parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria.")
+                        help='maximum distance in bases that UTR can be from a transcript. Default: 200')
+    parser.add_argument('--override-utr', action="store_true", help="ignore already annotated 3' UTRs in criteria")
     parser.add_argument('--extend-utr', action="store_true",
-                        help="extend previously existing 3' UTR annotations where possible.")
+                        help="extend previously existing 3' UTR annotations where possible")
     parser.add_argument('--five-prime-ext', type=int, default=0,
-                        help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it.')
+                        help='a peak within this many bases of a gene\'s 5\'-end should be assumed to belong to it. '
+                             'Default: 0')
     parser.add_argument('--skip-soft-clip', action="store_true",
-                        help="skip the resource-intensive logic to pileup soft-clipped read edges.")
-    parser.add_argument('--min-pileups', type=int, default=10, help='Minimum number of piled-up mapped reads for UTR cut-off.')
+                        help="skip the resource-intensive logic to pileup soft-clipped read edges")
+    parser.add_argument('--min-pileups', type=int, default=10, help='minimum number of piled-up mapped reads for UTR cut-off. '
+                                                                    'Default: 10')
     parser.add_argument('--min-poly-tail', type=int, default=10,
-                        help='Minimum length of poly-A/T tail considered in soft-clipped reads.')
-    parser.add_argument('-p', '--processors', type=int, default=1, help="How many processor cores to use.")
-    parser.add_argument('-f', '-force', '--force', action="store_true", help="Overwrite outputs if they exist.")
-    parser.add_argument('-o', '--output', help="output filename.")
-    parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3).")
-    parser.add_argument('--keep-cache', action="store_true", help="Keep cached files on run completion.")
+                        help='minimum length of poly-A/T tail considered in soft-clipped reads. Default: 10')
+    parser.add_argument('-p', '--processors', type=int, default=1, help="how many processor cores to use. Default: 1")
+    parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
+    parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")
+    parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3)")
+    parser.add_argument('--keep-cache', action="store_true", help="keep cached files on run completion")
     parser.add_argument('--version', action='version',
                         version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
     return parser
