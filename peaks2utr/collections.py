@@ -145,7 +145,7 @@ class SPATTruncationPointsDict(collections.UserDict):
 
 class BroadPeaksList(collections.UserList):
     """
-    List of MACS3 broad peaks.
+    List of MACS broad peaks.
     """
     def __init__(self, initlist=None, broadpeak_fn=None, strand=None):
         super().__init__(initlist)

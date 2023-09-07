@@ -10,12 +10,12 @@ class PysamError(Exception):
     pass
 
 
-class MACS3Error(Exception):
+class MACSError(Exception):
     pass
 
 
 EXCEPTIONS_MAP = {
     "_find_zero_coverage_intervals": PybedtoolsError,
     "_count_unmapped_pileups": PysamError,
-    "call_peaks": MACS3Error,
+    "call_peaks": MACSError,
 }

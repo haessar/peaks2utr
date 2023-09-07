@@ -27,7 +27,7 @@ class RangeMixin:
 
 class Peak(RangeMixin):
     """
-    MACS3 peak in BED6+3 format but 1-based included
+    MACS peak in BED6+3 format but 1-based included
     init from 0-based half-opened BED6+3 arguments.
     """
     def __init__(self, *args):

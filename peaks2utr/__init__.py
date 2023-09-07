@@ -24,7 +24,7 @@ def prepare_argparser():
           /
          /
 
-        Use MACS3 to build forward and reverse peaks files for given .bam
+        Use MACS to build forward and reverse peaks files for given .bam
         file.
         Iterate peaks through set of criteria to determine UTR viability,
         before annotating in .gff file.
