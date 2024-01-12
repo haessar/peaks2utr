@@ -30,7 +30,7 @@ def write_summary_stats(annotations, pipeline):
                                        len(annotations.filter(featuretype=FeatureTypes.ThreePrimeUTR, source=__package__))))
 
 
-def merge_annotations(db, annotations):
+def merge_annotations(db, annotations, alternative_splicing=False):
     """
     Update three_prime_UTR annotations dict with all features from GFF_IN file.
     """
@@ -38,9 +38,9 @@ def merge_annotations(db, annotations):
 
     db = sqlite3.connect(db, check_same_thread=False)
     db = FeatureDB(db)
-    for gene in db.all_features(featuretype=FeatureTypes.Gene):
+    for gene in db.all_features(featuretype=FeatureTypes.Gene if not alternative_splicing else FeatureTypes.GtfTranscript):
         if gene.id not in annotations:
-            features = features_dict_for_gene(db, gene)
+            features = features_dict_for_gene(db, gene, transcript=gene if alternative_splicing else None)
             annotations[gene.id] = features
 
 

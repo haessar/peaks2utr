@@ -50,6 +50,8 @@ def prepare_argparser():
     parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
     parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")
     parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3)")
+    parser.add_argument('--alternative-splicing', action="store_true",
+                        help="EXPERIMENTAL: disable inference of genes in GTF input for overlapping transcripts")
     parser.add_argument('--keep-cache', action="store_true", help="keep cached files on run completion")
     parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=version(__package__)))
     return parser
@@ -162,7 +164,7 @@ async def _main(args):
         BAMSplitter(bam_basename, args).process()
 
         db, _, _ = await asyncio.gather(
-            create_db(args.GFF_IN),
+            create_db(args.GFF_IN, alternative_splicing=args.alternative_splicing),
             call_peaks(bam_basename, "forward"),
             call_peaks(bam_basename, "reverse")
         )
@@ -185,7 +187,7 @@ async def _main(args):
         # Post-processing #
         ###################
 
-        merge_annotations(db, annotations)
+        merge_annotations(db, annotations, args.alternative_splicing)
         gt_gff3_sort(annotations, new_gff_fn, args.force, args.gtf_out)
         write_summary_stats(annotations, pipeline)
 

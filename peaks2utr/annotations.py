@@ -92,20 +92,27 @@ class AnnotationsPipeline:
             coverage_gaps (ZeroCoverageIntervalsDict)
         """
         utr_found = False
-        genes = self._filter_db(db, peak.chr, peak.start, peak.end, peak.strand, constants.FeatureTypes.Gene) or []
+        if not self.args.alternative_splicing:
+            genes = self._filter_db(db, peak.chr, peak.start, peak.end, peak.strand, constants.FeatureTypes.Gene) or []
+        else:
+            genes = self._filter_db(db, peak.chr, peak.start, peak.end, peak.strand, constants.FeatureTypes.GtfTranscript) \
+                    or []
         if genes:
             for idx, gene in enumerate(genes):
-                transcripts = db.children(
-                    gene,
-                    featuretype=constants.FeatureTypes.GffTranscript + constants.FeatureTypes.GtfTranscript,
-                    order_by="end" if peak.strand == "+" else "start",
-                    reverse=True if peak.strand == "+" else False
-                )
-                # Take outermost transcript
-                try:
-                    transcript = next(transcripts)
-                except StopIteration:
-                    continue
+                if not self.args.alternative_splicing:
+                    transcripts = db.children(
+                        gene,
+                        featuretype=constants.FeatureTypes.GffTranscript + constants.FeatureTypes.GtfTranscript,
+                        order_by="end" if peak.strand == "+" else "start",
+                        reverse=True if peak.strand == "+" else False
+                    )
+                    # Take outermost transcript
+                    try:
+                        transcript = next(transcripts)
+                    except StopIteration:
+                        continue
+                else:
+                    transcript = gene
                 try:
                     # First, make the transcript 3' extremity match
                     # what will not be reannotated depending on override/extend
@@ -120,6 +127,9 @@ class AnnotationsPipeline:
                         next_gene_idx = idx + 1
                         next_gene = genes[next_gene_idx % len(genes)]
                         while next_gene != gene:
+                            if self.args.alternative_splicing and \
+                                    next_gene.attributes['gene_id'] == gene.attributes['gene_id']:
+                                continue
                             for exon in db.children(next_gene, featuretype=constants.FeatureTypes.Exon):
                                 # Stop if the transcript is within exon of another gene
                                 criteria.assert_transcript_not_a_subset_of_exon(transcript, exon, next_gene)

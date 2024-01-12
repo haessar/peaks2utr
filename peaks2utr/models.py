@@ -111,7 +111,7 @@ class UTR(RangeMixin):
         attrs = {}
         id = self._create_id(transcript, db)
         if gtf_in:
-            attrs["gene_id"] = [gene.id]
+            attrs["gene_id"] = [gene.id] if not gene == transcript else transcript.attributes['gene_id']
             attrs["transcript_id"] = [transcript.id]
         else:
             attrs["ID"] = [id]

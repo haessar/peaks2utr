@@ -150,7 +150,7 @@ def features_dict_for_gene(db, gene, transcript=None):
     Return a dictionary containing gene and all its child features.
     Pass an optional transcript when 3' UTR has been annotated to allow extension.
     """
-    features = {"gene": gene}
+    features = {"gene": gene} if gene != transcript else {"transcript": transcript}
     for idx, f in enumerate(db.children(gene)):
         if f.id != gene.id:
             if transcript and f.id == transcript.id:

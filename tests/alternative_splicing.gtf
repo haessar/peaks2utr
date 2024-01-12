@@ -1,0 +1,27 @@
+##gff-version 3
+ateAlb2.1	funannotate	transcript	76692	86162	.	-	.	transcript_id "Aalb_00004274-T1"; gene_id "Aalb_00004274"
+ateAlb2.1	funannotate	exon	76692	79108	.	-	.	transcript_id "Aalb_00004274-T1"; gene_id "Aalb_00004274";
+ateAlb2.1	funannotate	exon	82165	82457	.	-	.	transcript_id "Aalb_00004274-T1"; gene_id "Aalb_00004274";
+ateAlb2.1	funannotate	exon	84823	85591	.	-	.	transcript_id "Aalb_00004274-T1"; gene_id "Aalb_00004274";
+ateAlb2.1	funannotate	exon	85672	85898	.	-	.	transcript_id "Aalb_00004274-T1"; gene_id "Aalb_00004274";
+ateAlb2.1	funannotate	exon	85993	86162	.	-	.	transcript_id "Aalb_00004274-T1"; gene_id "Aalb_00004274";
+ateAlb2.1	funannotate	transcript	153660	157786	.	+	.	transcript_id "Aalb_00004275-T1"; gene_id "Aalb_00004275"
+ateAlb2.1	funannotate	exon	153660	155351	.	+	.	transcript_id "Aalb_00004275-T1"; gene_id "Aalb_00004275";
+ateAlb2.1	funannotate	exon	155474	156732	.	+	.	transcript_id "Aalb_00004275-T1"; gene_id "Aalb_00004275";
+ateAlb2.1	funannotate	exon	156956	156983	.	+	.	transcript_id "Aalb_00004275-T1"; gene_id "Aalb_00004275";
+ateAlb2.1	funannotate	exon	157076	157111	.	+	.	transcript_id "Aalb_00004275-T1"; gene_id "Aalb_00004275";
+ateAlb2.1	funannotate	exon	157186	157308	.	+	.	transcript_id "Aalb_00004275-T1"; gene_id "Aalb_00004275";
+ateAlb2.1	funannotate	exon	157337	157786	.	+	.	transcript_id "Aalb_00004275-T1"; gene_id "Aalb_00004275";
+ateAlb2.1	funannotate	transcript	153660	162595	.	+	.	transcript_id "Aalb_00004276-T1"; gene_id "Aalb_00004276"
+ateAlb2.1	funannotate	exon	153660	155351	.	+	.	transcript_id "Aalb_00004276-T1"; gene_id "Aalb_00004276";
+ateAlb2.1	funannotate	exon	155474	156599	.	+	.	transcript_id "Aalb_00004276-T1"; gene_id "Aalb_00004276";
+ateAlb2.1	funannotate	exon	160406	161138	.	+	.	transcript_id "Aalb_00004276-T1"; gene_id "Aalb_00004276";
+ateAlb2.1	funannotate	exon	161960	162595	.	+	.	transcript_id "Aalb_00004276-T1"; gene_id "Aalb_00004276";
+ateAlb2.1	funannotate	transcript	157165	441035	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277"
+ateAlb2.1	funannotate	exon	157165	157308	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277";
+ateAlb2.1	funannotate	exon	157337	157594	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277";
+ateAlb2.1	funannotate	exon	168317	168423	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277";
+ateAlb2.1	funannotate	exon	168714	168814	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277";
+ateAlb2.1	funannotate	exon	359260	359413	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277";
+ateAlb2.1	funannotate	exon	392054	392160	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277";
+ateAlb2.1	funannotate	exon	440847	441035	.	-	.	transcript_id "Aalb_00004277-T1"; gene_id "Aalb_00004277";
