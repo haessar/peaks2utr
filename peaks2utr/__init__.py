@@ -10,7 +10,7 @@ if platform == "darwin":
 
 def prepare_argparser():
     import argparse
-    import pkg_resources
+    from importlib.metadata import version
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -50,9 +50,10 @@ def prepare_argparser():
     parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
     parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")
     parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3)")
+    parser.add_argument('--alternative-splicing', action="store_true",
+                        help="EXPERIMENTAL: disable inference of genes in GTF input for overlapping transcripts")
     parser.add_argument('--keep-cache', action="store_true", help="keep cached files on run completion")
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s {version}'.format(version=pkg_resources.require(__package__)[0].version))
+    parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=version(__package__)))
     return parser
 
 
