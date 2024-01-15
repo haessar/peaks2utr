@@ -176,7 +176,7 @@ async def _main(args):
         # Process peaks   #
         ###################
 
-        if not matching_chr(db, args.BAM_IN):
+        if not matching_chr(db, args):
             logging.error("No chromosome shared between GFF_IN and BAM_IN. Aborting.")
             sys.exit(1)
 

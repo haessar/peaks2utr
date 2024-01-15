@@ -2,10 +2,10 @@ import logging
 
 import pysam
 
-from .utils import connect_db
+from .utils import connect_db, index_bam_file
 
 
-def matching_chr(db_path, bam_path):
+def matching_chr(db_path, args):
     """
     Check seqids in BAM and GFF input files to ensure at least one matches. Returns bool.
     """
@@ -13,7 +13,8 @@ def matching_chr(db_path, bam_path):
     gff_chrs = {f.seqid for f in db.all_features()}
     bam_chrs = set()
 
-    samfile = pysam.AlignmentFile(bam_path, "rb", require_index=True)
+    index_bam_file(args.BAM_IN, args.processors)
+    samfile = pysam.AlignmentFile(args.BAM_IN, "rb", require_index=True)
 
     for chr in gff_chrs:
         try:
