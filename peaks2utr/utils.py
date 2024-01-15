@@ -2,9 +2,11 @@ import multiprocessing
 import os.path
 from queue import Empty
 import resource
+import sqlite3
 
 from .constants import CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
+from .models import FeatureDB
 
 
 class Falsey:
@@ -40,6 +42,11 @@ class Counter:
 
 def cached(filename):
     return os.path.join(CACHE_DIR, filename)
+
+
+def connect_db(db_path):
+    db = sqlite3.connect(db_path, check_same_thread=False)
+    return FeatureDB(db)
 
 
 async def consume_lines(pipe, log_file):
