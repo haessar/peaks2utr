@@ -50,6 +50,7 @@ def prepare_argparser():
     parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
     parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")
     parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3)")
+    parser.add_argument('--skip-validation', action="store_true", help="skip validation of input files")
     parser.add_argument('--keep-cache', action="store_true", help="keep cached files on run completion")
     parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=version(__package__)))
     return parser
@@ -173,12 +174,18 @@ async def _main(args):
             BroadPeaksList(broadpeak_fn=cached("reverse_peaks.broadPeak"), strand="reverse")
 
         ###################
-        # Process peaks   #
+        # Validation      #
         ###################
 
-        if not matching_chr(db, args):
-            logging.error("No chromosome shared between GFF_IN and BAM_IN. Aborting.")
-            sys.exit(1)
+        if not args.skip_validation:
+            logging.info("Performing input file validation.")
+            if not matching_chr(db, args):
+                logging.error("No chromosome shared between GFF_IN and BAM_IN. Aborting.")
+                sys.exit(1)
+
+        ###################
+        # Process peaks   #
+        ###################
 
         annotations = AnnotationsDict(args=args)
         with AnnotationsPipeline(peaks, args, db_path=db) as pipeline:
