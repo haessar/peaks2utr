@@ -78,7 +78,8 @@ def main():
     from .constants import PERC_ALLOCATED_VRAM
     from .utils import limit_memory
 
-    limit_memory(PERC_ALLOCATED_VRAM * virtual_memory().total / 100)
+    if platform != "darwin":
+        limit_memory(PERC_ALLOCATED_VRAM * virtual_memory().total / 100)
     argparser = prepare_argparser()
     args = argparser.parse_args()
     asyncio.run(_main(args))
