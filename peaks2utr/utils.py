@@ -1,10 +1,15 @@
+import logging
 import multiprocessing
 import os.path
 from queue import Empty
 import resource
+import sqlite3
+
+import pysam
 
 from .constants import CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
+from .models import FeatureDB
 
 
 class Falsey:
@@ -40,6 +45,17 @@ class Counter:
 
 def cached(filename):
     return os.path.join(CACHE_DIR, filename)
+
+
+def connect_db(db_path):
+    db = sqlite3.connect(db_path, check_same_thread=False)
+    return FeatureDB(db)
+
+
+def index_bam_file(bam_file, processors):
+    if not os.path.isfile(cached(bam_file + '.bai')):
+        logging.info("Indexing %s." % bam_file)
+        pysam.index("-@", str(processors), bam_file)
 
 
 async def consume_lines(pipe, log_file):

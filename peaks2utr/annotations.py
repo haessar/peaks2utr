@@ -1,7 +1,6 @@
 import logging
 import math
 import multiprocessing
-import sqlite3
 
 from tqdm import tqdm
 
@@ -9,8 +8,8 @@ from . import constants, criteria
 from .constants import AnnotationColour, STRAND_MAP
 from .collections import SPATTruncationPointsDict, ZeroCoverageIntervalsDict
 from .exceptions import AnnotationsError
-from .models import UTR, FeatureDB
-from .utils import Counter, Falsey, cached, features_dict_for_gene, iter_batches
+from .models import UTR
+from .utils import Counter, Falsey, cached, connect_db, features_dict_for_gene, iter_batches
 
 
 class NoNearbyFeatures(Falsey):
@@ -46,10 +45,6 @@ class AnnotationsPipeline:
     def __exit__(self, type, value, traceback):
         self.pbar.close()
 
-    def _connect_db(self):
-        db = sqlite3.connect(self.db_path, check_same_thread=False)
-        return FeatureDB(db)
-
     def _batch_annotate_strand(self, peaks_batch):
         """
         Create multiprocessing Process to handle batch of peaks. Connect to sqlite3 db for each batch to prevent
@@ -60,7 +55,7 @@ class AnnotationsPipeline:
         for strand, symbol in STRAND_MAP.items():
             truncation_points[symbol] = SPATTruncationPointsDict(json_fn=cached(strand + "_unmapped.json"))
             coverage_gaps[symbol] = ZeroCoverageIntervalsDict(bed_fn=cached(strand + "_coverage_gaps.bed"))
-        db = self._connect_db()
+        db = connect_db(self.db_path)
         return multiprocessing.Process(target=self._iter_peaks, args=(db, peaks_batch, truncation_points, coverage_gaps))
 
     def _iter_peaks(self, db, peaks_batch, truncation_points, coverage_gaps):
