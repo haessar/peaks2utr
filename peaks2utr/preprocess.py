@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from .exceptions import EXCEPTIONS_MAP
 from .models import SoftClippedRead
-from .utils import cached, consume_lines, filter_nested_dict, sum_nested_dicts, multiprocess_over_dict
+from .utils import cached, consume_lines, filter_nested_dict, index_bam_file, sum_nested_dicts, multiprocess_over_dict
 from .constants import CACHE_DIR, LOG_DIR, STRAND_PYSAM_ARGS
 
 
@@ -74,16 +74,11 @@ class BAMSplitter:
             for bf in self.read_group_bams}
         self.spat_outputs_to_process = self.spat_outputs.copy()
 
-    def index_bam_file(self, bam_file):
-        if not os.path.isfile(cached(bam_file + '.bai')):
-            logging.info("Indexing %s." % bam_file)
-            pysam.index("-@", str(self.args.processors), bam_file)
-
     def _get_max_reads_for_pbar(self):
         max_reads = 0
         for bf in self.read_group_bams:
             if not os.path.isfile(self.spat_outputs[bf]):
-                self.index_bam_file(bf)
+                index_bam_file(bf, self.args.processors)
                 idxstats = pysam.idxstats(bf).split('\n')
                 num_reads = sum([int(chr.split("\t")[2]) + int(chr.split("\t")[3]) for chr in idxstats[:-1]])
                 if num_reads > max_reads:
