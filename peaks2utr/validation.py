@@ -1,15 +1,19 @@
 import logging
 
-import gffutils
 import pysam
 
+from .utils import connect_db
 
-def matching_chr(db, args):
-    db = gffutils.FeatureDB(db)
-    gff_chrs = {f.chrom for f in db.all_features()}
+
+def matching_chr(db_path, bam_path):
+    """
+    Check seqids in BAM and GFF input files to ensure at least one matches. Returns bool.
+    """
+    db = connect_db(db_path)
+    gff_chrs = {f.seqid for f in db.all_features()}
     bam_chrs = set()
 
-    samfile = pysam.AlignmentFile(args.BAM_IN, "rb", require_index=True)
+    samfile = pysam.AlignmentFile(bam_path, "rb", require_index=True)
 
     for chr in gff_chrs:
         try:
