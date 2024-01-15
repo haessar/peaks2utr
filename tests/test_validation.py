@@ -19,7 +19,7 @@ class TestValidation(unittest.TestCase):
         gffutils.create_db(os.path.join(TEST_DIR, self.args.GFF_IN), self.db_path, force=True)
 
     def tearDown(self):
-        os.remove(os.path.join(TEST_DIR, "Chr1.db"))
+        os.remove(self.db_path)
 
     def test_matching_chr(self):
         mock_af = MagicMock()
