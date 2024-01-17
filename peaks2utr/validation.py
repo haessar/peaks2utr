@@ -13,6 +13,9 @@ LOG_FN = "validation.log"
 
 
 def valid_bam(args):
+    """
+    Check that BAM file is valid / has valid header. Returns bool.
+    """
     try:
         pysam.AlignmentFile(args.BAM_IN, "rb")
     except ValueError as e:
