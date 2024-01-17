@@ -1,16 +1,36 @@
 import logging
+import os
+import os.path
 
+from gffutils.inspect import inspect
 import pysam
 
-from .utils import connect_db, index_bam_file
+from .constants import LOG_DIR
+from .exceptions import EXCEPTIONS_MAP
+from .utils import index_bam_file
+
+LOG_FN = "validation.log"
 
 
-def matching_chr(db_path, args):
+def valid_bam(args):
+    """
+    Check that BAM file is valid / has valid header. Returns bool.
+    """
+    try:
+        pysam.AlignmentFile(args.BAM_IN, "rb")
+    except ValueError as e:
+        with open(os.path.join(LOG_DIR, LOG_FN), 'w') as flog:
+            flog.write(str(e))
+        raise EXCEPTIONS_MAP.get(valid_bam.__name__, Exception)("Check %s." % LOG_FN)
+    return True
+
+
+def matching_chr(args):
     """
     Check seqids in BAM and GFF input files to ensure at least one matches. Returns bool.
     """
-    db = connect_db(db_path)
-    gff_chrs = {f.seqid for f in db.all_features()}
+    gff_inspection = inspect(args.GFF_IN, look_for=["chrom"], verbose=False)
+    gff_chrs = gff_inspection.get('chrom', {})
     bam_chrs = set()
 
     index_bam_file(args.BAM_IN, args.processors)
