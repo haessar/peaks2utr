@@ -100,7 +100,7 @@ async def _main(args):
     from .utils import cached, yield_from_process
     from .preprocess import BAMSplitter, call_peaks, create_db
     from .postprocess import merge_annotations, gt_gff3_sort, write_summary_stats
-    from .validation import matching_chr
+    from .validation import matching_chr, valid_bam
 
     try:
         ###################
@@ -158,6 +158,13 @@ async def _main(args):
             logging.error("Only one of --extend-utr and --override-utr can be used simultaneously. Aborting.")
             sys.exit(1)
 
+        if not args.skip_validation:
+            logging.info("Performing input file validation.")
+            valid_bam(args)
+            if not matching_chr(args):
+                logging.error("No chromosome shared between GFF_IN and BAM_IN. Aborting.")
+                sys.exit(1)
+
         ###################
         # Pre-processing  #
         ###################
@@ -172,16 +179,6 @@ async def _main(args):
         peaks = \
             BroadPeaksList(broadpeak_fn=cached("forward_peaks.broadPeak"), strand="forward") + \
             BroadPeaksList(broadpeak_fn=cached("reverse_peaks.broadPeak"), strand="reverse")
-
-        ###################
-        # Validation      #
-        ###################
-
-        if not args.skip_validation:
-            logging.info("Performing input file validation.")
-            if not matching_chr(db, args):
-                logging.error("No chromosome shared between GFF_IN and BAM_IN. Aborting.")
-                sys.exit(1)
 
         ###################
         # Process peaks   #
