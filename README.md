@@ -2,7 +2,8 @@
 ![CI](https://github.com/haessar/peaks2utr/actions/workflows/ci.yml/badge.svg?branch=master)
 [![PYPI - Version](https://img.shields.io/pypi/v/peaks2utr.svg)](https://pypi.org/project/peaks2utr/)
 [![PYPI - Python Version](https://img.shields.io/pypi/pyversions/peaks2utr.svg)](https://pypi.org/project/peaks2utr/)
- [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![DOI](https://zenodo.org/badge/428231055.svg)](https://zenodo.org/badge/latestdoi/428231055) 
 
 <img width="400" src="https://user-images.githubusercontent.com/11962461/172829916-c2fa81e6-7ae5-4c9a-a758-c3ba4c4198cb.png">
 
