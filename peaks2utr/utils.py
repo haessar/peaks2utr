@@ -44,7 +44,7 @@ class Counter:
 
 
 def cached(filename):
-    return os.path.join(CACHE_DIR, filename)
+    return os.path.join(CACHE_DIR, os.path.basename(filename))
 
 
 def connect_db(db_path):
