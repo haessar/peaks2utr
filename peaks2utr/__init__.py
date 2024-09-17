@@ -49,6 +49,7 @@ def prepare_argparser():
     parser.add_argument('-p', '--processors', type=int, default=1, help="how many processor cores to use. Default: 1")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
     parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")
+    parser.add_argument('--gtf-in', default=False, help=argparse.SUPPRESS)
     parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3)")
     parser.add_argument('--skip-validation', action="store_true", help="skip validation of input files")
     parser.add_argument('--keep-cache', action="store_true", help="keep cached files on run completion")
