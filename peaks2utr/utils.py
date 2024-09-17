@@ -1,3 +1,4 @@
+import argparse
 import logging
 import multiprocessing
 import os.path
@@ -7,9 +8,23 @@ import sqlite3
 
 import pysam
 
-from .constants import CACHE_DIR
+from .constants import FeatureTypes, CACHE_DIR
 from .exceptions import EXCEPTIONS_MAP
 from .models import FeatureDB
+
+
+class CustomArgumentParser(argparse.ArgumentParser):
+    def parse_args(self, args=None, namespace=None):
+        args = super().parse_args(args, namespace)
+        if args.do_pseudo:
+            self.add_pseudo_featuretypes()
+        return args
+    
+    @staticmethod
+    def add_pseudo_featuretypes():
+        FeatureTypes.Gene.append("pseudogene")
+        FeatureTypes.GffTranscript.append("pseudogenic_transcript")
+        FeatureTypes.Exon.append("pseudogenic_exon")
 
 
 class Falsey:
@@ -44,7 +59,7 @@ class Counter:
 
 
 def cached(filename):
-    return os.path.join(CACHE_DIR, filename)
+    return os.path.join(CACHE_DIR, os.path.basename(filename))
 
 
 def connect_db(db_path):

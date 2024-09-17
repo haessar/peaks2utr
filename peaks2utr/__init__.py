@@ -11,8 +11,10 @@ if platform == "darwin":
 def prepare_argparser():
     import argparse
     from importlib.metadata import version
+    
+    from .utils import CustomArgumentParser
 
-    parser = argparse.ArgumentParser(
+    parser = CustomArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=r"""
         ____________________________________________________________________
@@ -46,9 +48,12 @@ def prepare_argparser():
                                                                     'Default: 10')
     parser.add_argument('--min-poly-tail', type=int, default=10,
                         help='minimum length of poly-A/T tail considered in soft-clipped reads. Default: 10')
+    parser.add_argument('--do-pseudo', action="store_true",
+                        help="annotate 3' UTR also for pseudogenic transcripts.")
     parser.add_argument('-p', '--processors', type=int, default=1, help="how many processor cores to use. Default: 1")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
     parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")
+    parser.add_argument('--gtf-in', default=False, help=argparse.SUPPRESS)
     parser.add_argument('--gtf', dest="gtf_out", action="store_true", help="output in GTF format (rather than default GFF3)")
     parser.add_argument('--skip-validation', action="store_true", help="skip validation of input files")
     parser.add_argument('--keep-cache', action="store_true", help="keep cached files on run completion")
