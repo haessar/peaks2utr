@@ -75,6 +75,17 @@ class AnnotationsPipeline:
             featuretype=featuretype)
         )
         return sorted(features, key=lambda x: x.start, reverse=False if strand == "+" else True)
+    
+    @staticmethod
+    def _get_ordered_transcripts(db, gene, peak):
+        return (
+            db.children(
+                gene,
+                featuretype=constants.FeatureTypes.GffTranscript + constants.FeatureTypes.GtfTranscript,
+                order_by="end" if peak.strand == "+" else "start",
+                reverse=True if peak.strand == "+" else False
+            )
+        )
 
     def annotate_utr_for_peak(self, db, peak, truncation_points, coverage_gaps):
         """
@@ -90,12 +101,7 @@ class AnnotationsPipeline:
         genes = self._filter_db(db, peak.chr, peak.start, peak.end, peak.strand, constants.FeatureTypes.Gene) or []
         if genes:
             for idx, gene in enumerate(genes):
-                transcripts = db.children(
-                    gene,
-                    featuretype=constants.FeatureTypes.GffTranscript + constants.FeatureTypes.GtfTranscript,
-                    order_by="end" if peak.strand == "+" else "start",
-                    reverse=True if peak.strand == "+" else False
-                )
+                transcripts = self._get_ordered_transcripts(db, gene, peak)
                 # Take outermost transcript
                 try:
                     transcript = next(transcripts)
@@ -115,11 +121,11 @@ class AnnotationsPipeline:
                         next_gene_idx = idx + 1
                         next_gene = genes[next_gene_idx % len(genes)]
                         while next_gene != gene:
-                            for exon in db.children(next_gene, featuretype=constants.FeatureTypes.Exon):
-                                # Stop if the transcript is within exon of another gene
-                                criteria.assert_transcript_not_a_subset_of_exon(transcript, exon, next_gene)
+                            for next_transcript in self._get_ordered_transcripts(db, next_gene, peak):
+                                # Stop if the transcript is contained within transcript of another gene
+                                criteria.assert_transcript_not_a_subset_of_adjacent_gene(transcript, next_transcript, next_gene)
                                 # Truncate to avoid overlap with another gene
-                                criteria.truncate_to_following_exon(peak, transcript, utr, exon, next_gene,
+                                criteria.truncate_to_adjacent_transcript(peak, transcript, utr, next_transcript, next_gene,
                                                                     self.args.five_prime_ext)
                             next_gene_idx += 1
                             next_gene = genes[next_gene_idx % len(genes)]

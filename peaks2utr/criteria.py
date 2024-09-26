@@ -55,13 +55,13 @@ def assert_peak_not_a_subset_of_transcript(peak, transcript):
                               % (peak.__class__.__name__, peak.name, transcript.id))
 
 
-def assert_transcript_not_a_subset_of_exon(transcript, exon, gene):
+def assert_transcript_not_a_subset_of_adjacent_gene(transcript, adj_transcript, gene):
     """
-    If a transcript occurs entirely within another gene's exon, its 3' UTR should not be annotated.
+    If a transcript occurs entirely within another gene's transcript, its 3' UTR should not be annotated.
     """
-    if transcript.range.issubset(exon.range):
-        raise CriteriaFailure("%s %s wholly contained within exon %s of gene %s"
-                              % (transcript.__class__.__name__, transcript.id, exon.id, gene.id))
+    if transcript.range.issubset(adj_transcript.range):
+        raise CriteriaFailure("%s %s wholly contained within transcript %s of gene %s"
+                              % (transcript.__class__.__name__, transcript.id, adj_transcript.id, gene.id))
 
 
 @track_failed_peaks
@@ -80,14 +80,14 @@ def assert_3_prime_end_and_truncate(peak, transcript, utr):
         raise CriteriaFailure("Peak %s corresponds to 5'-end of transcript %s" % (peak.name, transcript.id))
 
 
-def truncate_to_following_exon(peak, transcript, utr, exon, gene, five_prime_ext=0):
+def truncate_to_adjacent_transcript(peak, transcript, utr, adj_transcript, gene, five_prime_ext=0):
     """
-    If a peak is broad enough that it overlaps an exon of another gene, we check for an
+    If a peak is broad enough that it overlaps a transcript of another gene, we check for an
     intersection and truncate if it exists (taking into account assumed 5' extension).
     """
-    if utr.range.intersection(exon.range):
-        logging.debug("Peak %s overlapping exon %s of gene %s: Truncating" % (peak.name, exon.id, gene.id))
-        if peak.strand == "+" and exon.start > transcript.end:
-            utr.end = exon.start - 1 - five_prime_ext
-        elif peak.strand == "-" and exon.end < transcript.start:
-            utr.start = exon.end + 1 + five_prime_ext
+    if utr.range.intersection(adj_transcript.range):
+        logging.debug("Peak %s overlapping transcript %s of gene %s: Truncating" % (peak.name, adj_transcript.id, gene.id))
+        if peak.strand == "+" and adj_transcript.start > transcript.end:
+            utr.end = adj_transcript.start - 1 - five_prime_ext
+        elif peak.strand == "-" and adj_transcript.end < transcript.start:
+            utr.start = adj_transcript.end + 1 + five_prime_ext
