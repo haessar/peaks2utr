@@ -103,12 +103,19 @@ class TestOutputFormatting(unittest.TestCase):
         self.assertListEqual(exon.strip().split("\t"), expected_exon)
     
     def test_gtf_output_without_gtf_out_flag(self):
-        self.args.gtf_in = True
         self.args.output = "test_output.gtf"
         self.assertFalse(self.args.gtf_out)
         output_fn = get_output_filename(self.args)
         self.assertEqual(output_fn, self.args.output)
         self.assertTrue(self.args.gtf_out)
+    
+    def test_gff_output_with_gtf_out_flag(self):
+        self.args.gtf_out = True
+        self.args.output = "test_output.gff"
+        with self.assertLogs(level='WARNING') as cm:
+            output_fn = get_output_filename(self.args)
+        self.assertRegex(cm.output[0], "WARNING")
+        self.assertEqual(output_fn, self.args.output)
 
 
 if __name__ == '__main__':

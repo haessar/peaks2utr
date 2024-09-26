@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import os.path
 from queue import Empty
+import re
 import resource
 import sqlite3
 
@@ -201,5 +202,9 @@ def get_output_filename(args):
     else:
         if not args.gtf_out and args.output.endswith(".gtf"):
             args.gtf_out = True
+        elif args.gtf_out and re.search(r".gff(3){0,1}$", args.output):
+            logging.warning(f"""--gtf option has been submitted alongside {args.output} output filename.
+                            This will lead to a GTF formatted file with a GFF extension. Please ensure
+                            you consider the desired outcome.""")
         output_fn = args.output
     return output_fn
