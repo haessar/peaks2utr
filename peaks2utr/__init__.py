@@ -102,7 +102,7 @@ async def _main(args):
     from . import constants
     from .annotations import AnnotationsPipeline
     from .collections import AnnotationsDict, BroadPeaksList
-    from .utils import cached, yield_from_process
+    from .utils import cached, get_output_filename, yield_from_process
     from .preprocess import BAMSplitter, call_peaks, create_db
     from .postprocess import merge_annotations, gt_gff3_sort, write_summary_stats
     from .validation import matching_chr, valid_bam
@@ -142,14 +142,7 @@ async def _main(args):
             os.mkdir(constants.CACHE_DIR)
 
         bam_basename = os.path.basename(os.path.splitext(args.BAM_IN)[0])
-        gff_base, gff_ext = os.path.splitext(args.GFF_IN)
-        gff_basename = os.path.basename(gff_base)
-        args.gtf_in = True if "gtf" in gff_ext else False
-        if not args.output:
-            new_gff_fn = gff_basename + ".new"
-            new_gff_fn += ".gtf" if args.gtf_out else ".gff3"
-        else:
-            new_gff_fn = args.output
+        new_gff_fn = get_output_filename(args)
 
         ###################
         # Perform checks  #
@@ -214,6 +207,6 @@ async def _main(args):
         try:
             if not args.keep_cache:
                 logging.info("Clearing cache.")
-                shutil.rmtree(constants.CACHE_DIR)
+                shutil.rmtree(constants.CACHE_DIR, ignore_errors=True)
         except NameError:
             pass

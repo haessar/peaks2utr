@@ -5,6 +5,7 @@ from peaks2utr import prepare_argparser
 from peaks2utr.collections import AnnotationsDict
 from peaks2utr.constants import FeatureTypes, GFFUTILS_GTF_DIALECT
 from peaks2utr.models import Feature, UTR
+from peaks2utr.utils import get_output_filename
 
 
 class TestOutputFormatting(unittest.TestCase):
@@ -100,6 +101,21 @@ class TestOutputFormatting(unittest.TestCase):
         self.assertListEqual(transcript.strip().split("\t"), expected_transcript)
         self.assertListEqual(utr.strip().split("\t"), expected_utr)
         self.assertListEqual(exon.strip().split("\t"), expected_exon)
+    
+    def test_gtf_output_without_gtf_out_flag(self):
+        self.args.output = "test_output.gtf"
+        self.assertFalse(self.args.gtf_out)
+        output_fn = get_output_filename(self.args)
+        self.assertEqual(output_fn, self.args.output)
+        self.assertTrue(self.args.gtf_out)
+    
+    def test_gff_output_with_gtf_out_flag(self):
+        self.args.gtf_out = True
+        self.args.output = "test_output.gff"
+        with self.assertLogs(level='WARNING') as cm:
+            output_fn = get_output_filename(self.args)
+        self.assertRegex(cm.output[0], "WARNING")
+        self.assertEqual(output_fn, self.args.output)
 
 
 if __name__ == '__main__':
