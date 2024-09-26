@@ -189,3 +189,17 @@ def features_dict_for_gene(db, gene, transcript=None):
             else:
                 features.update({"feature_{}".format(idx): f})
     return features
+
+
+def get_output_filename(args):
+    gff_base, gff_ext = os.path.splitext(args.GFF_IN)
+    gff_basename = os.path.basename(gff_base)
+    args.gtf_in = True if "gtf" in gff_ext else False
+    if not args.output:
+        output_fn = gff_basename + ".new"
+        output_fn += ".gtf" if args.gtf_out else ".gff3"
+    else:
+        if not args.gtf_out and args.output.endswith(".gtf"):
+            args.gtf_out = True
+        output_fn = args.output
+    return output_fn
