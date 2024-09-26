@@ -214,6 +214,6 @@ async def _main(args):
         try:
             if not args.keep_cache:
                 logging.info("Clearing cache.")
-                shutil.rmtree(constants.CACHE_DIR)
+                shutil.rmtree(constants.CACHE_DIR, ignore_errors=True)
         except NameError:
             pass
