@@ -16,7 +16,7 @@ TEST_DIR = os.path.dirname(__file__)
 class TestCase1(unittest.TestCase):
     def setUp(self):
         db_path = os.path.join(TEST_DIR, "case1.db")
-        gffutils.create_db(os.path.join(TEST_DIR, "case1.gtf"), db_path, force=True)
+        gffutils.create_db(os.path.join(TEST_DIR, "case1.gtf"), db_path, force=True, disable_infer_genes=True, disable_infer_transcripts=True)
         self.db = FeatureDB(db_path)
         self.coverage_gaps = ZeroCoverageIntervalsDict()
         self.truncation_points = SPATTruncationPointsDict()
