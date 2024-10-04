@@ -44,11 +44,14 @@ class AnnotationsDict(collections.UserDict):
     @staticmethod
     def _apply_gff_dialect(feature, attrs):
         feature.dialect = constants.GFFUTILS_GFF_DIALECT
-        if feature.featuretype not in constants.FeatureTypes.Gene:
+        if feature.featuretype not in constants.FeatureTypes.Gene + constants.FeatureTypes.NonCodingGene:
             if feature.featuretype in constants.FeatureTypes.GtfTranscript:
                 attrs['Parent'] = attrs.pop('gene_id')
                 attrs['ID'] = attrs.pop('transcript_id')
                 feature.featuretype = constants.FeatureTypes.GffTranscript[0]
+            elif feature.featuretype in constants.FeatureTypes.NonCodingTranscript:
+                attrs['Parent'] = attrs.pop('gene_id')
+                attrs['ID'] = attrs.pop('transcript_id')
             else:
                 attrs.pop('gene_id')
                 attrs['Parent'] = attrs.pop('transcript_id')
@@ -59,11 +62,14 @@ class AnnotationsDict(collections.UserDict):
     @staticmethod
     def _apply_gtf_dialect(feature, attrs, gene_id=None):
         feature.dialect = constants.GFFUTILS_GTF_DIALECT
-        if feature.featuretype not in constants.FeatureTypes.Gene:
+        if feature.featuretype not in constants.FeatureTypes.Gene + constants.FeatureTypes.NonCodingGene:
             if feature.featuretype in constants.FeatureTypes.GffTranscript:
                 attrs['gene_id'] = attrs.pop('Parent')
                 attrs['transcript_id'] = attrs.pop('ID')
                 feature.featuretype = constants.FeatureTypes.GtfTranscript[0]
+            elif feature.featuretype in constants.FeatureTypes.NonCodingTranscript:
+                attrs['gene_id'] = attrs.pop('Parent')
+                attrs['transcript_id'] = attrs.pop('ID')
             else:
                 attrs['gene_id'] = gene_id
                 attrs['transcript_id'] = attrs.pop('Parent')

@@ -15,10 +15,12 @@ class AnnotationColour:
 
 class FeatureTypes:
     Gene = ['gene', 'protein_coding_gene']
+    NonCodingGene = ['ncRNA_gene']
     FivePrimeUTR = ['five_prime_UTR', 'five_prime_utr']
     ThreePrimeUTR = ['three_prime_UTR', 'three_prime_utr']
     GffTranscript = ['mRNA']
     GtfTranscript = ['transcript']
+    NonCodingTranscript = ['ncRNA', 'rRNA', 'snoRNA', 'tRNA']
     Exon = ['exon']
 
 
