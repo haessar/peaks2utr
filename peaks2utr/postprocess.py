@@ -38,7 +38,7 @@ def merge_annotations(db, annotations):
 
     db = sqlite3.connect(db, check_same_thread=False)
     db = FeatureDB(db)
-    for gene in db.all_features(featuretype=FeatureTypes.Gene):
+    for gene in db.all_features(featuretype=FeatureTypes.Gene + FeatureTypes.NonCodingGene):
         if gene.id not in annotations:
             features = features_dict_for_gene(db, gene)
             annotations[gene.id] = features
