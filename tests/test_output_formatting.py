@@ -7,8 +7,6 @@ from peaks2utr.constants import FeatureTypes, GFFUTILS_GTF_DIALECT
 from peaks2utr.models import Feature, UTR
 from peaks2utr.utils import get_output_filename
 
-NCRNA_FEATURETYPE = "tRNA"
-
 
 class TestOutputFormatting(unittest.TestCase):
 
@@ -27,7 +25,7 @@ class TestOutputFormatting(unittest.TestCase):
                                       strand=strand, attributes={"ID": ["gene1:mRNA"], "Parent": [gene_id]})
         self.ncRNA_gene_gff = Feature(chr, id=ncRNA_gene_id, featuretype=FeatureTypes.NonCodingGene[0], start=start, end=end, strand=strand,
                                 attributes={"ID": [ncRNA_gene_id]})
-        self.ncRNA_feature_gff = Feature(chr, id=ncRNA_gene_id+":t1", featuretype=NCRNA_FEATURETYPE, start=start, end=end,
+        self.ncRNA_feature_gff = Feature(chr, id=ncRNA_gene_id+":t1", featuretype=FeatureTypes.NonCodingTranscript[0], start=start, end=end,
                                          strand=strand, attributes={"ID": [ncRNA_gene_id+":t1"], "Parent": [ncRNA_gene_id]})
         self.gene_gtf = Feature(chr, id=gene_id, featuretype=FeatureTypes.Gene[0], source="gffutils_derived",
                                 start=start, end=end, strand=strand, attributes={"gene_id": [gene_id]},
@@ -38,7 +36,7 @@ class TestOutputFormatting(unittest.TestCase):
         self.ncRNA_gene_gtf = Feature(chr, id=ncRNA_gene_id, featuretype=FeatureTypes.NonCodingGene[0], source="gffutils_derived",
                                 start=start, end=end, strand=strand, attributes={"gene_id": [ncRNA_gene_id]},
                                 dialect=GFFUTILS_GTF_DIALECT)
-        self.ncRNA_feature_gtf = Feature(chr, id=ncRNA_gene_id+".t1", featuretype=NCRNA_FEATURETYPE, start=start, end=end,
+        self.ncRNA_feature_gtf = Feature(chr, id=ncRNA_gene_id+".t1", featuretype=FeatureTypes.NonCodingTranscript[0], start=start, end=end,
                                          strand=strand, attributes={"transcript_id": [ncRNA_gene_id+".t1"], "gene_id": [ncRNA_gene_id]},
                                          dialect=GFFUTILS_GTF_DIALECT)
         self.utr = UTR(start=start, end=end)
@@ -134,7 +132,7 @@ class TestOutputFormatting(unittest.TestCase):
         self.args.gtf_in = True
         self.args.gtf_out = False
         expected_gene = ["chr1", "gffutils_derived", "ncRNA_gene", "1000", "2000", ".", "+", ".", "ID=ncRNA_gene1"]
-        expected_feature_0 = ["chr1", ".", "tRNA", "1000", "2000", ".", "+", ".", "ID=ncRNA_gene1.t1;Parent=ncRNA_gene1"]
+        expected_feature_0 = ["chr1", ".", "ncRNA", "1000", "2000", ".", "+", ".", "ID=ncRNA_gene1.t1;Parent=ncRNA_gene1"]
         annotations = AnnotationsDict(args=self.args)
         annotations.update({
             self.ncRNA_gene_gtf.id: {"gene": self.ncRNA_gene_gtf, "feature_0": self.ncRNA_feature_gtf}
@@ -148,7 +146,7 @@ class TestOutputFormatting(unittest.TestCase):
         self.args.gtf_out = True
         expected_gene = ["chr1", ".", "ncRNA_gene", "1000", "2000", ".", "+", ".",
                                'gene_id "ncRNA_gene1";']
-        expected_feature_0 = ["chr1", ".", "tRNA", "1000", "2000", ".", "+", ".",
+        expected_feature_0 = ["chr1", ".", "ncRNA", "1000", "2000", ".", "+", ".",
                                'gene_id "ncRNA_gene1"; transcript_id "ncRNA_gene1:t1";']
         annotations = AnnotationsDict(args=self.args)
         annotations.update({
