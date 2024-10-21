@@ -50,6 +50,8 @@ def prepare_argparser():
                         help='minimum length of poly-A/T tail considered in soft-clipped reads. Default: 10')
     parser.add_argument('--do-pseudo', action="store_true",
                         help="annotate 3' UTR also for pseudogenic transcripts.")
+    parser.add_argument('--no-strand-overlap', action="store_true",
+                        help="Prevent overlapping of new UTR feature with any feature on other strand (truncating if necessary).")
     parser.add_argument('-p', '--processors', type=int, default=1, help="how many processor cores to use. Default: 1")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
     parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")

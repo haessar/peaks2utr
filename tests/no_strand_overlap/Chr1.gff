@@ -1,0 +1,12 @@
+PRFA01000001	VEuPathDB	CDS	277045	278109	.	+	0	ID=C4B63_1g127-t42_1-p1-CDS1;Parent=C4B63_1g127-t42_1;gene_id=C4B63_1g127;protein_source_id=C4B63_1g127-t42_1-p1
+PRFA01000001	VEuPathDB	exon	277045	278109	.	+	.	ID=exon_C4B63_1g127-t42_1-E1;Parent=C4B63_1g127-t42_1;gene_id=C4B63_1g127
+PRFA01000001	VEuPathDB	mRNA	277045	278109	.	+	.	ID=C4B63_1g127-t42_1;Parent=C4B63_1g127;description=L1Tc protein fragment;gene_ebi_biotype=protein_coding
+PRFA01000001	VEuPathDB	protein_coding_gene	277045	278109	.	+	.	ID=C4B63_1g127;description=L1Tc protein fragment;ebi_biotype=protein_coding
+PRFA01000001	VEuPathDB	exon	280029	280559	.	-	.	ID=exon_C4B63_1g1320-t42_1-E1;Parent=C4B63_1g1320-t42_1;gene_id=C4B63_1g1320
+PRFA01000001	VEuPathDB	pseudogene	280029	280559	.	-	.	ID=C4B63_1g1320;description=pseudogene;ebi_biotype=pseudogene
+PRFA01000001	VEuPathDB	pseudogenic_transcript	280029	280559	.	-	.	ID=C4B63_1g1320-t42_1;Parent=C4B63_1g1320;description=pseudogene;gene_ebi_biotype=pseudogene
+PRFA01000001	VEuPathDB	CDS	280147	281385	.	-	0	ID=C4B63_1g1319-t42_1-p1-CDS1;Parent=C4B63_1g1319-t42_1;gene_id=C4B63_1g1319;protein_source_id=C4B63_1g1319-t42_1-p1
+PRFA01000001	VEuPathDB	exon	280147	281385	.	-	.	ID=exon_C4B63_1g1319-t42_1-E1;Parent=C4B63_1g1319-t42_1;gene_id=C4B63_1g1319
+PRFA01000001	VEuPathDB	mRNA	280147	281418	.	-	.	ID=C4B63_1g1319-t42_1;Parent=C4B63_1g1319;description=Mucin-associated surface protein (MASP);gene_ebi_biotype=protein_coding
+PRFA01000001	VEuPathDB	protein_coding_gene	280147	281418	.	-	.	ID=C4B63_1g1319;description=Mucin-associated surface protein (MASP);ebi_biotype=protein_coding
+PRFA01000001	BIOTTOFNI	five_prime_UTR	281386	281418	.	-	.	ID=utrC4B63_1g1319-t42_1;Parent=C4B63_1g1319-t42_1
