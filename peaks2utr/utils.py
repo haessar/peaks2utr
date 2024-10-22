@@ -15,6 +15,10 @@ from .models import FeatureDB
 
 
 class CustomArgumentParser(argparse.ArgumentParser):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.remove_pseudo_featuretypes()
+    
     def parse_args(self, args=None, namespace=None):
         args = super().parse_args(args, namespace)
         if args.do_pseudo:
@@ -26,6 +30,15 @@ class CustomArgumentParser(argparse.ArgumentParser):
         FeatureTypes.Gene.append("pseudogene")
         FeatureTypes.GffTranscript.append("pseudogenic_transcript")
         FeatureTypes.Exon.append("pseudogenic_exon")
+    
+    @staticmethod
+    def remove_pseudo_featuretypes():
+        try:
+            FeatureTypes.Gene.remove("pseudogene")
+            FeatureTypes.GffTranscript.remove("pseudogenic_transcript")
+            FeatureTypes.Exon.remove("pseudogenic_exon")
+        except ValueError:
+            pass
 
 
 class Falsey:
