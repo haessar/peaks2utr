@@ -71,19 +71,19 @@ class AnnotationsPipeline:
             seqid=chr,
             start=start - self.args.max_distance,
             end=end + self.args.max_distance,
-            strand=strand,
+            strand=strand if not self.args.no_strand_overlap else None,
             featuretype=featuretype)
         )
         return sorted(features, key=lambda x: x.start, reverse=False if strand == "+" else True)
     
     @staticmethod
-    def _get_ordered_transcripts(db, gene, peak):
+    def _get_ordered_transcripts(db, gene):
         return (
             db.children(
                 gene,
                 featuretype=constants.FeatureTypes.GffTranscript + constants.FeatureTypes.GtfTranscript,
-                order_by="end" if peak.strand == "+" else "start",
-                reverse=True if peak.strand == "+" else False
+                order_by="end" if gene.strand == "+" else "start",
+                reverse=True if gene.strand == "+" else False
             )
         )
 
@@ -98,10 +98,20 @@ class AnnotationsPipeline:
             coverage_gaps (ZeroCoverageIntervalsDict)
         """
         utr_found = False
-        genes = self._filter_db(db, peak.chr, peak.start, peak.end, peak.strand, constants.FeatureTypes.Gene) or []
+        genes = self._filter_db(
+            db,
+            peak.chr,
+            peak.start,
+            peak.end,
+            peak.strand,
+            constants.FeatureTypes.Gene + constants.FeatureTypes.NonCodingGene
+        ) or []
         if genes:
             for idx, gene in enumerate(genes):
-                transcripts = self._get_ordered_transcripts(db, gene, peak)
+                # Skip disqualifying genes
+                if gene.featuretype not in constants.FeatureTypes.Gene or gene.strand != peak.strand:
+                    continue
+                transcripts = self._get_ordered_transcripts(db, gene)
                 # Take outermost transcript
                 try:
                     transcript = next(transcripts)
@@ -121,7 +131,7 @@ class AnnotationsPipeline:
                         next_gene_idx = idx + 1
                         next_gene = genes[next_gene_idx % len(genes)]
                         while next_gene != gene:
-                            for next_transcript in self._get_ordered_transcripts(db, next_gene, peak):
+                            for next_transcript in self._get_ordered_transcripts(db, next_gene):
                                 # Stop if the transcript is contained within transcript of another gene
                                 criteria.assert_transcript_not_a_subset_of_adjacent_gene(transcript, next_transcript, next_gene)
                                 # Truncate to avoid overlap with another gene

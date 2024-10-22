@@ -45,6 +45,14 @@ class TestDoPseudo(unittest.TestCase):
         }
         self._run_test(expected_annotations)
     
+    def test_do_pseudo_true_no_strand_overlap_annotations(self):
+        self.args = self.argparser.parse_args(["", "", "--do-pseudo", "--max-distance", "2000", "--no-strand-overlap"])
+        expected_annotations = {
+            "forward_peak_3": {"PVL_120054200": UTR(2520543, 2522539)},
+            "reverse_peak_3": {"PVL_120054300": UTR(2522147, 2522539)}
+        }
+        self._run_test(expected_annotations)
+
     def _run_test(self, expected_annotations):
         pipeline = AnnotationsPipeline(self.forward_peaks + self.reverse_peaks, self.args, queue=Queue())
         for peak in self.forward_peaks + self.reverse_peaks:
