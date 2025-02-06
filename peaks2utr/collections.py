@@ -73,7 +73,7 @@ class AnnotationsDict(collections.UserDict):
             else:
                 attrs['gene_id'] = gene_id
                 attrs['transcript_id'] = attrs.pop('Parent')
-                attrs.pop('ID')
+                attrs.pop('ID', None)
         else:
             attrs['gene_id'] = attrs.pop('ID')
 
