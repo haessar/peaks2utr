@@ -26,10 +26,9 @@ def prepare_argparser():
           /
          /
 
-        Use MACS to build forward and reverse peaks files for given .bam
-        file.
-        Iterate peaks through set of criteria to determine UTR viability,
-        before annotating in .gff file.
+        Annotate 3′ UTRs using aligned reads (BAM) and gene models (GFF/GTF). 
+        Calls peaks with MACS, determines UTR viability using defined criteria,
+        and outputs a new annotation including "peaks2utr" UTR features.
         """
     )
     parser.add_argument('GFF_IN', help="input 'canonical' annotations file in gff or gtf format")
