@@ -39,3 +39,19 @@ To check that peaks2utr has installed correctly, simply run the following in you
 peaks2utr-check
 ```
 This uses a small demo set of input files contained in the repository: <a href="https://github.com/haessar/peaks2utr/blob/master/peaks2utr/demo/Tb927_01_v5.1.gff" target="_blank" >Tb927_01_v5.1.gff</a> & <a href="https://github.com/haessar/peaks2utr/blob/master/peaks2utr/demo/Tb927_01_v5.1.slice.bam" target="_blank" >Tb927_01_v5.1.slice.bam</a>. When complete, you should see a file `Tb927_01_v5.1.new.gff` which contains original annotations as well as 3' UTRs with source "peaks2utr".
+
+## Quick start
+peaks2utr is called from the command line as:
+```
+peaks2utr <GFF_IN> <BAM_IN> [options]
+```
+### Inputs
+* `GFF_IN` - gene models in either GFF3 or GTF format (existing 3' UTRs optional).
+* `BAM_IN` - aligned reads in BAM format.
+* `[options]` - Run `peaks2utr --help` for full set of optional arguments.
+### Outputs
+Outputs a GFF3 annotation file (or GTF with option `--gtf`) including original features plus 3' UTR features with `source=peaks2utr`. Output file name can be specified with `-o` or `--output`; by default outputs to original filename with a `*.new.<ext>` suffix.
+### Example call
+```
+peaks2utr Tb927_01_v5.1.gff Tb927_01_v5.1.slice.bam -p 4 -o output.gff3
+```
