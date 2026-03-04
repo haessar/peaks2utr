@@ -8,6 +8,9 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  schedule:
+    - cron: "0 6 1 * *"  # 1st of every month at 06:00 UTC
+  workflow_dispatch:
 
 jobs:
   build:
