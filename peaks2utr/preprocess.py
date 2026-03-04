@@ -165,7 +165,7 @@ async def call_peaks(bam_basename, strand):
     if not os.path.isfile(cached("%s_peaks.broadPeak" % strand)):
         logging.info("Calling peaks for %s strand with MACS." % strand)
         process = await asyncio.create_subprocess_exec(
-            "macs2", "callpeak",
+            "macs3", "callpeak",
             "-t", cached(bam_basename + '.%s.bam' % strand),
             "-n", strand,
             "--nomodel",
