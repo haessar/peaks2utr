@@ -33,9 +33,9 @@ apt-get install bedtools
 ```
 apt-get install genometools
 ```
-## Quick start
+### Verify installation
 To check that peaks2utr has installed correctly, simply run the following in your terminal to initiate a short run with default parameters
 ```
-peaks2utr-demo
+peaks2utr-check
 ```
 This uses a small demo set of input files contained in the repository: <a href="https://github.com/haessar/peaks2utr/blob/master/peaks2utr/demo/Tb927_01_v5.1.gff" target="_blank" >Tb927_01_v5.1.gff</a> & <a href="https://github.com/haessar/peaks2utr/blob/master/peaks2utr/demo/Tb927_01_v5.1.slice.bam" target="_blank" >Tb927_01_v5.1.slice.bam</a>. When complete, you should see a file `Tb927_01_v5.1.new.gff` which contains original annotations as well as 3' UTRs with source "peaks2utr".
