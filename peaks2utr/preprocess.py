@@ -143,7 +143,7 @@ class BAMSplitter:
         gaps.saveas(cached(output_file))
 
 
-async def create_db(gff_in):
+async def create_db(gff_in, disable_infer_genes=False, disable_infer_transcripts=False):
     """
     Asynchronously create sqlite3 db for GFF_IN.
     """
@@ -151,7 +151,9 @@ async def create_db(gff_in):
     if not os.path.isfile(gff_db):
         logging.info('Creating gff db.')
         await sync_to_async(gffutils.create_db)(
-            gff_in, gff_db, force=True, verbose=True, merge_strategy="create_unique")
+            gff_in, gff_db, force=True, verbose=True, merge_strategy="create_unique",
+            disable_infer_genes=disable_infer_genes,
+            disable_infer_transcripts=disable_infer_transcripts)
         logging.info('Finished creating gff db.')
     else:
         logging.info("Using cached gff db.")

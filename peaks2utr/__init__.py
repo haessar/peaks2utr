@@ -51,6 +51,10 @@ def prepare_argparser():
                         help="annotate 3' UTR also for pseudogenic transcripts.")
     parser.add_argument('--no-strand-overlap', action="store_true",
                         help="Prevent overlapping of new UTR feature with any feature on other strand (truncating if necessary).")
+    parser.add_argument('--disable-infer-genes', action="store_true",
+                        help="Disable gffutils gene inference when creating the annotation database. Default: False")
+    parser.add_argument('--disable-infer-transcripts', action="store_true",
+                        help="Disable gffutils transcript inference when creating the annotation database. Default: False")
     parser.add_argument('-p', '--processors', type=int, default=1, help="how many processor cores to use. Default: 1")
     parser.add_argument('-f', '-force', '--force', action="store_true", help="overwrite outputs if they exist")
     parser.add_argument('-o', '--output', help="output filename. Defaults to <GFF_IN basename>.new.<ext>")
@@ -171,7 +175,7 @@ async def _main(args):
         BAMSplitter(bam_basename, args).process()
 
         db, _, _ = await asyncio.gather(
-            create_db(args.GFF_IN),
+            create_db(args.GFF_IN, args.disable_infer_genes, args.disable_infer_transcripts),
             call_peaks(bam_basename, "forward"),
             call_peaks(bam_basename, "reverse")
         )

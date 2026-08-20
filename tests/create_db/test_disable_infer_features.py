@@ -18,6 +18,7 @@ class TestDisableInferFeatures(unittest.TestCase):
         self.db1_path = os.path.join(TEST_DIR, "case3.no_parent.1.db")
         self.db2_path = os.path.join(TEST_DIR, "case3.no_parent.2.db")
         self.db3_path = os.path.join(TEST_DIR, "case3.no_parent.3.db")
+        self.db4_path = os.path.join(TEST_DIR, "case3.with_parent.no_infer.db")
         gffutils.create_db(os.path.join(TEST_DIR, "case3.no_parent.gtf"), self.db1_path, force=True, merge_strategy="create_unique",
                            disable_infer_genes=True,
                            disable_infer_transcripts=True)
@@ -27,9 +28,13 @@ class TestDisableInferFeatures(unittest.TestCase):
         gffutils.create_db(os.path.join(TEST_DIR, "case3.no_parent.gtf"), self.db3_path, force=True, merge_strategy="create_unique",
                            disable_infer_genes=False,
                            disable_infer_transcripts=False)
+        gffutils.create_db(os.path.join(TEST_DIR, "case3.gtf"), self.db4_path, force=True, merge_strategy="create_unique",
+                           disable_infer_genes=True,
+                           disable_infer_transcripts=True)
         self.db1 = FeatureDB(self.db1_path)
         self.db2 = FeatureDB(self.db2_path)
         self.db3 = FeatureDB(self.db3_path)
+        self.db4 = FeatureDB(self.db4_path)
         self.coverage_gaps = ZeroCoverageIntervalsDict()
         self.truncation_points = SPATTruncationPointsDict()
         forward_peaks_filename = os.path.join(TEST_DIR, "forward_peaks.broadPeak")
@@ -43,6 +48,7 @@ class TestDisableInferFeatures(unittest.TestCase):
         os.remove(self.db1_path)
         os.remove(self.db2_path)
         os.remove(self.db3_path)
+        os.remove(self.db4_path)
     
     def _annotate_db(self, db):
         self.args.max_distance = 5000
@@ -59,6 +65,10 @@ class TestDisableInferFeatures(unittest.TestCase):
         
         # UTR is correctly annotated when disable_infer_genes and disable_infer_transcripts are both False
         self.assertIn("ENSMUSG00000112145", self._annotate_db(self.db3))
+
+    def test_utr_annotation_with_explicit_parents_without_inference(self):
+        # UTR is correctly annotated when parent gene and transcript features exist
+        self.assertIn("ENSMUSG00000112145", self._annotate_db(self.db4))
 
 
 if __name__ == '__main__':
