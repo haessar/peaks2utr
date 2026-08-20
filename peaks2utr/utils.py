@@ -207,8 +207,9 @@ def features_dict_for_gene(db, gene, transcript=None):
 
 def get_output_filename(args):
     gff_base, gff_ext = os.path.splitext(args.GFF_IN)
+    if gff_ext.lower() in ('.gz',):
+        gff_base, gff_ext = os.path.splitext(gff_base)
     gff_basename = os.path.basename(gff_base)
-    args.gtf_in = True if "gtf" in gff_ext else False
     if not args.output:
         output_fn = gff_basename + ".new"
         output_fn += ".gtf" if args.gtf_out else ".gff3"
